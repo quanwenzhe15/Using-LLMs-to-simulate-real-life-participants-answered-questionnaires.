@@ -1,228 +1,235 @@
 # Using-LLMs-to-simulate-real-life-participants-answered-questionnaires.
-# EasyPsych
-An intelligent questionnaire simulation system based on large language models (LLMs). It supports multiple mainstream questionnaire file formats, automatically parses questionnaire structures, and generates realistic survey responses tailored to participants' demographic background data.
+# EasyPsych 
 
-> [!NOTE]
-> A personal note from the developer: The **GUI interface code** and **concurrent API processing module** were developed with the assistance of AI tools. Currently, only Alibaba Cloud Tongyi Qianwen (Qwen) series models are fully tested and supported in the GUI configuration. More detailed model selection options will be added to the GUI in subsequent updates.
+An intelligent questionnaire simulation system based on large language models (LLMs). It supports multiple mainstream questionnaire file formats, automatically parses questionnaire structures, and generates realistic survey responses tailored to participants' demographic background data. 
 
----
+> [!NOTE] 
+> A personal note from the developer: The **GUI interface code** and **concurrent API processing module** were developed with the assistance of AI tools. Currently, only Alibaba Cloud Tongyi Qianwen (Qwen) series models are fully tested and supported in the GUI configuration. More detailed model selection options will be added to the GUI in subsequent updates. 
 
-## Key Features
-- 🎯 **Smart Parsing**: Accurately identifies questionnaire dimensions, questions, scoring rules, and reverse-scoring items
-- 📊 **Multi-Format Support**: Full compatibility with Excel, CSV, and Word documents
-- 🤖 **LLM Integration**: Built-in Alibaba Cloud Tongyi Qianwen (Qwen) LLM API
-- 🎲 **Randomization Options**: Supports flexible question order randomization
-- 🔄 **Concurrent Processing**: Multi-threaded API calls to significantly improve simulation efficiency
-- 💾 **Smart Saving**: Automatically distinguishes between fully completed and interrupted result files
-- 🎨 **Intuitive GUI**: Clean, beginner-friendly graphical operation interface
+--- 
 
----
+## 🎯 Key Features 
 
-## Core Capabilities
+### Core Capabilities
+- **Smart Parsing**: Accurately identifies questionnaire dimensions, questions, scoring rules, and reverse-scoring items 
+- **Multi-Format Support**: Full compatibility with Excel, CSV, and Word documents 
+- **LLM Integration**: Built-in Alibaba Cloud Tongyi Qianwen (Qwen) LLM API 
+- **Randomization Options**: Supports flexible question order randomization 
+- **Concurrent Processing**: Multi-threaded API calls to significantly improve simulation efficiency 
+- **Smart Saving**: Automatically distinguishes between fully completed and interrupted result files 
+- **Intuitive GUI**: Clean, beginner-friendly graphical operation interface
 
-### Supported Questionnaire Formats
-| Format | Extensions | Description |
-|:-------|:-----------|:------------|
-| Excel | .xlsx, .xls | Ideal for structured questionnaire data |
-| CSV | .csv | Comma-separated values file with wide compatibility |
-| Word | .docx | Flexible natural language format for questionnaire design |
+### Enhanced Features (Latest Updates)
+- **Memory Function**: Automatically remembers user settings, language preferences, and file selections
+- **Smart Interface Flow**: Language selection and welcome screens only appear on first launch
+- **Improved Cancellation**: Enhanced cancel functionality with confirmation dialogs
+- **Progress Optimization**: Optimized progress bar with better UI responsiveness
 
-### Detailed Functions
-1. **Automatic Questionnaire Parsing**
-   - Accurately identifies dimension headers
-   - Efficiently extracts question content
-   - Intelligently parses scoring rules
-   - Automatically detects reverse-scoring items
+--- 
 
-2. **Intelligent Response Simulation**
-   - Generates personalized responses based on participant demographic backgrounds
-   - Adapts to multiple psychological scale types
-   - Concurrent processing for high-volume simulation tasks
+## 🚀 Quick Start 
 
-3. **Flexible Configuration**
-   - Customizable API key settings
-   - Model selection (currently Qwen-only, see [Future Plans](#future-plans))
-   - Toggle for question randomization
-   - Customizable output format settings
+### System Requirements 
+- Python 3.8 or higher 
+- Optimized for Windows operating system 
 
-4. **Robust GUI & Error Handling**
-   - Organized multi-tab settings interface
-   - Real-time progress bar for transparent task tracking
-   - Detailed status prompts with traceable error logs
-   - Complete error handling and interruption recovery mechanism
+### Install Dependencies 
+Run the following command in your terminal: 
+```bash 
+pip install pandas openpyxl python-docx openai tenacity tkinter 
+``` 
 
----
+### Configure API Key 
+Open the `config.py` file in the project root directory, and fill in your Alibaba Cloud API key: 
+```python 
+DASHSCOPE_API_KEY = "your-api-key-here" 
+BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1" 
+MODEL_NAME = "qwen-plus" 
+``` 
 
-## 🚀 Quick Start
+### Run the Program 
+Execute the following command in your terminal to launch the GUI: 
+```bash 
+python EasyPsych_source_code.py 
+``` 
 
-### System Requirements
-- Python 3.8 or higher
-- Optimized for Windows operating system
+--- 
 
-### Install Dependencies
-Run the following command in your terminal:
-```bash
-pip install pandas openpyxl python-docx openai tenacity tkinter
-```
+## 📝 Usage Guide 
 
-### Configure API Key
-Open the `config.py` file in the project root directory, and fill in your Alibaba Cloud API key:
-```python
-DASHSCOPE_API_KEY = "your-api-key-here"
-BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-MODEL_NAME = "qwen-plus"
-```
+### Step 1: Prepare Your Files 
+1. **Questionnaire File** 
+   - Excel/CSV format: Must include `Question ID`, `Dimension`, `Question Content`, and `Scoring Standard` fields 
+   - Word format: Use natural language layout; dimension headers **must end with a colon**, and scoring rules **must start with "Coding:"** for accurate parsing 
 
-### Run the Program
-Execute the following command in your terminal to launch the GUI:
-```bash
-python EasyPsych_source_code.py
-```
+2. **Participant Demographic File** 
+   - Only Excel format is supported; must contain basic demographic information of the virtual participants 
 
----
+### Step 2: GUI Configuration 
+1. **Language Selection** (First Launch Only)
+   - Choose between Chinese and English interface
+   - This selection is remembered for future launches
 
-## 📝 Usage Guide
+2. **API Settings** 
+   - Enter your API key, or load it directly from the pre-configured `config.py` 
+   - Select the supported Qwen model variant 
+   - Set the maximum token limit for single API responses 
 
-### Step 1: Prepare Your Files
-1. **Questionnaire File**
-   - Excel/CSV format: Must include `Question ID`, `Dimension`, `Question Content`, and `Scoring Standard` fields
-   - Word format: Use natural language layout; dimension headers **must end with a colon**, and scoring rules **must start with "Coding:"** for accurate parsing
+3. **Questionnaire Settings** 
+   - Select your prepared questionnaire file 
+   - Check the box to enable question order randomization 
+   - Set the maximum number of consecutive questions from the same dimension 
 
-2. **Participant Demographic File**
-   - Only Excel format is supported; must contain basic demographic information of the virtual participants
+4. **File Requirements** 
+   - View detailed file format requirements and specifications
+   - Understand supported question formats and scoring rules
 
-### Step 2: GUI Configuration
-1. **API Settings**
-   - Enter your API key, or load it directly from the pre-configured `config.py`
-   - Select the supported Qwen model variant
-   - Set the maximum token limit for single API responses
+5. **File Path Settings** 
+   - Select your participant demographic file 
+   - Specify the output directory for the final result files 
 
-2. **Questionnaire Settings**
-   - Select your prepared questionnaire file
-   - Check the box to enable question order randomization
-   - Set the maximum number of consecutive questions from the same dimension
+### Step 3: Start Processing 
+Click the **"Start Processing"** button, and the program will automatically complete the following workflow: 
+1. Parse and validate the questionnaire file structure 
+2. Display a real-time progress bar for the simulation task 
+3. Call the LLM API concurrently to generate simulated responses 
+4. Automatically save the final results to the specified directory 
 
-3. **File Path Settings**
-   - Select your participant demographic file
-   - Specify the output directory for the final result files
+--- 
 
-### Step 3: Start Processing
-Click the **"Start Processing"** button, and the program will automatically complete the following workflow:
-1. Parse and validate the questionnaire file structure
-2. Display a real-time progress bar for the simulation task
-3. Call the LLM API concurrently to generate simulated responses
-4. Automatically save the final results to the specified directory
+## ⚙️ Full Configuration Details 
 
----
+### `config.py` Core Settings 
+| Configuration Item | Description | Default Value | 
+|:-------------------|:------------|:--------------| 
+| `DASHSCOPE_API_KEY` | Alibaba Cloud API key (required) | Empty (user must fill in) | 
+| `BASE_URL` | API base request URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 
+| `MODEL_NAME` | LLM model name | `qwen-plus` | 
 
-## ⚙️ Full Configuration Details
+### Runtime Parameters 
+| Parameter | Description | Default Value | 
+|:----------|:------------|:--------------| 
+| `MAX_TOKENS` | Maximum token count per API response | 512 | 
+| `TEMPERATURE` | Response diversity (0-1; higher = more diverse) | 0.7 | 
+| `API_RETRY_TIMES` | Max retry times for failed API calls | 3 | 
+| `API_RETRY_DELAY` | Initial retry delay (in seconds, exponential backoff) | 2 | 
 
-### `config.py` Core Settings
-| Configuration Item | Description | Default Value |
-|:-------------------|:------------|:--------------|
-| `DASHSCOPE_API_KEY` | Alibaba Cloud API key (required) | Empty (user must fill in) |
-| `BASE_URL` | API base request URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
-| `MODEL_NAME` | LLM model name | `qwen-plus` |
+### Memory Function Settings
+| Setting | Description | Storage Location |
+|:--------|:------------|:-----------------|
+| Language Preference | User's language choice | `user_settings.json` |
+| Welcome Screen Status | Whether welcome screen has been shown | `user_settings.json` |
+| API Configuration | API key, base URL, model settings | `user_settings.json` |
+| Questionnaire Settings | Randomization, token limits, age ranges | `user_settings.json` |
+| File Paths | Last used questionnaire and background files | `user_settings.json` |
+| Output Settings | Output format, filename, directory | `user_settings.json` |
 
-### Runtime Parameters
-| Parameter | Description | Default Value |
-|:----------|:------------|:--------------|
-| `MAX_TOKENS` | Maximum token count per API response | 512 |
-| `TEMPERATURE` | Response diversity (0-1; higher = more diverse) | 0.7 |
-| `API_RETRY_TIMES` | Max retry times for failed API calls | 3 |
-| `API_RETRY_DELAY` | Initial retry delay (in seconds, exponential backoff) | 2 |
+--- 
 
----
+## 🔄 Enhanced Features (Latest Updates)
 
-## 📦 Packaging & Distribution
+### Smart Memory Function
+- **Automatic Settings Persistence**: All user settings are automatically saved and restored
+- **Language Preference Memory**: Your language choice is remembered across sessions
+- **File Path Memory**: Last used file paths are preserved for convenience
+- **One-Time Welcome**: Welcome and language selection screens only appear on first launch
 
-### Use the Built-in Automated Script
-The project includes a one-click packaging script `new_build_app.py`. Simply run this command in your terminal:
-```bash
-python new_build_app.py
-```
+### Improved User Interface
+- **Streamlined Workflow**: Reduced repetitive steps for experienced users
+- **File Requirements Tab**: Dedicated section for file format specifications
+- **Enhanced Progress Tracking**: Better progress bar with improved responsiveness
+- **Smart Cancellation**: Confirmation dialog for cancel operations
 
-### Script Features
-- ✅ Automatically checks and installs PyInstaller if missing
-- ✅ Cleans up old build and temporary files automatically
+### Advanced Processing Features
+- **Concurrent API Calls**: Multi-threaded processing for faster simulations
+- **Error Handling**: Robust error handling with detailed error messages
+- **Progress Monitoring**: Real-time progress tracking with status updates
+- **Flexible Output**: Multiple output formats (Excel, CSV) with customizable filenames
+
+--- 
+
+## 📦 Packaging & Distribution 
+
+### Use the Built-in Automated Script 
+The project includes a one-click packaging script `new_build_app.py`. Simply run this command in your terminal: 
+```bash 
+python new_build_app.py 
+``` 
+
+### Script Features 
+- ✅ Automatically checks and installs PyInstaller if missing 
+- ✅ Cleans up old build and temporary files automatically 
 - ✅ Supports embedding custom application icons
-- ✅ Automatically includes the `config.py` configuration file
-- ✅ Automatically packages the `icons` resource folder
-- ✅ Generates a single standalone executable file for easy distribution
+- ✅ Includes all necessary configuration files and dependencies
+- ✅ Generates standalone executable for easy distribution
 
-### Packaged Output File
-After the packaging is complete, the executable file will be generated in the following path:
-```
-dist/EasyPsych.exe
-```
+### Packaging Requirements
+- Python 3.8+ with PyInstaller installed
+- All required dependencies (see Install Dependencies section)
+- Sufficient disk space for build process
 
-### Distribution Notes
-1. **API Key**: Double-check that the `config.py` file contains a valid API key before packaging
-2. **Custom Icon**: To use a custom icon, place your `.ico` file at `icons/EasyPsych.ico`
-3. **Pre-Distribution Test**: Always test the packaged executable locally before distribution to ensure normal operation
+### Generated Files
+After successful packaging, you'll find:
+- `dist/EasyPsych.exe` - Main executable file
+- `user_settings.json` - User preferences (created on first run)
+- All necessary configuration files embedded in the executable
 
----
+--- 
 
-## 📂 Project Structure
-```text
-EasyPsych/
-├── EasyPsych_source_code.py    # Main program entry and core logic
-├── config.py                    # API and global configuration file
-├── new_build_app.py             # One-click automated packaging script
-├── CHANGELOG.md                 # Version update changelog
-├── README.md                    # Project documentation (this file)
-├── icons/                       # Icon resource folder
-│   ├── EasyPsych.ico
-│   ├── EasyPsych.jpg
-│   └── app_icon.png
-├── dist/                        # Packaging output directory
-│   └── EasyPsych.exe
-└── build/                       # Build temporary file directory
-```
+## 🐛 Troubleshooting 
 
----
+### Common Issues
+1. **API Connection Errors**
+   - Verify your API key is correct and has sufficient quota
+   - Check internet connectivity
+   - Ensure the API endpoint URL is accessible
 
-## 🐛 Frequently Asked Questions
+2. **File Parsing Errors**
+   - Verify file formats match supported specifications
+   - Check for required columns in Excel/CSV files
+   - Ensure proper formatting in Word documents
 
-### Q: What should I do if the API call fails?
-A: First, verify that your API key in `config.py` is correct and that your Alibaba Cloud account has sufficient balance and available quota. You can also check your network connection stability, and refer to the error log in the GUI for detailed troubleshooting.
+3. **Memory Function Issues**
+   - If settings are not persisting, check write permissions
+   - Verify `user_settings.json` file is not corrupted
+   - Try deleting `user_settings.json` to reset preferences
 
-### Q: Why is my Word document failing to parse?
-A: Ensure that all dimension headers in your Word document end with a colon, and all scoring rules start with "Coding:". You can also adjust the document format to match the standard template to improve parsing accuracy.
+### Performance Tips
+- Use smaller batch sizes for better memory management
+- Enable question randomization for more realistic simulations
+- Monitor API usage to avoid rate limiting
+- Use appropriate token limits based on questionnaire complexity
 
-### Q: How can I modify the output file name?
-A: For successfully completed tasks, the result is automatically saved as `EasyPsych_Results.xlsx`. If the task is interrupted, a timestamp will be automatically added to the file name to avoid overwriting existing files.
+--- 
 
-### Q: The packaged executable won't run, how to fix it?
-A: First, confirm that the `config.py` file is correctly included in the packaging process. You can also check for missing dependencies, try reinstalling all required packages locally, and re-run the packaging script.
+## 🔮 Future Plans 
 
----
+### Planned Enhancements
+- **Multi-Model Support**: Integration with additional LLM providers
+- **Advanced Analytics**: Built-in statistical analysis features
+- **Batch Processing**: Support for processing multiple questionnaires simultaneously
+- **Custom Templates**: User-defined questionnaire templates
+- **Export Options**: Additional output formats and customization
 
-## 🚧 Future Plans
-- Add more detailed model selection options in the GUI, including support for other mainstream open-source and commercial LLMs
-- Add support for more questionnaire and scale file formats
-- Optimize error handling and interruption recovery capabilities
-- Add built-in sample questionnaire and participant demographic files for quick testing
-- Add cross-platform support for macOS and Linux
+### Community Contributions
+We welcome contributions from the community! Feel free to:
+- Report bugs and suggest improvements
+- Submit pull requests for new features
+- Share your use cases and success stories
+- Help improve documentation and translations
 
----
+--- 
 
-## 🤝 Contributing
-Issues and Pull Requests are warmly welcomed to help improve this project!
+## 📄 License 
 
----
+This project is provided as-is for educational and research purposes. Please ensure compliance with the terms of service of any third-party APIs used.
 
-## 📄 License
-This project is for educational and research purposes only.
+--- 
 
----
+## 🤝 Contributing 
 
-## 🙏 Acknowledgments
-- Alibaba Cloud Tongyi Qianwen (Qwen) Large Language Model
-- The excellent open-source libraries from the Python community
-- All contributors to this project
+For questions, bug reports, or feature requests, please open an issue on the project repository.
 
 ---
 
-### Format Compatibility Note
-This document strictly follows GitHub Flavored Markdown (GFM) specifications. You can directly copy all the content above into your `README.md` file, and it will render perfectly on GitHub without any format errors.
+*Last Updated: February 2025*
