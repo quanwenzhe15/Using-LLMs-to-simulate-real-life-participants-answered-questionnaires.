@@ -161,7 +161,7 @@ def show_welcome_and_license():
     agree_frame.pack(fill=tk.X)
     
     agree_var = tk.BooleanVar(value=False)
-    agree_checkbox = tk.Checkbutton(agree_frame, text="我已阅读并同意上述条款和条件", variable=agree_var, font=('Arial', 10))
+    agree_checkbox = tk.Checkbutton(agree_frame, text=get_text("terms_agree"), variable=agree_var, font=('Arial', 10))
     agree_checkbox.pack(pady=5)
     
     # Button frame
@@ -172,7 +172,7 @@ def show_welcome_and_license():
         if agree_var.get():
             root.destroy()
         else:
-            messagebox.showerror("错误", "您必须同意条款和条件才能继续使用本程序")
+            messagebox.showerror(get_text("error"), get_text("terms_must_agree"))
     
     def on_cancel():
         root.destroy()
@@ -180,10 +180,10 @@ def show_welcome_and_license():
         import sys
         sys.exit(0)
     
-    continue_button = tk.Button(button_frame, text="继续", command=on_continue, font=('Arial', 10, 'bold'), width=15)
+    continue_button = tk.Button(button_frame, text=get_text("continue_button"), command=on_continue, font=('Arial', 10, 'bold'), width=15)
     continue_button.pack(side=tk.RIGHT, padx=5)
     
-    cancel_button = tk.Button(button_frame, text="退出", command=on_cancel, font=('Arial', 10), width=10)
+    cancel_button = tk.Button(button_frame, text=get_text("exit_button"), command=on_cancel, font=('Arial', 10), width=10)
     cancel_button.pack(side=tk.RIGHT, padx=5)
     
     # Run the window
@@ -428,7 +428,8 @@ def load_subject_background(file_path, output_dir, min_age=18, max_age=75):
             root.destroy()
             
             if not user_choice:
-                return []
+                # 返回特殊值表示用户选择返回设置界面
+                return "RETURN_TO_SETTINGS"
         
         # 5. 年龄列清洗：转数值类型，检查年龄范围
         df['年龄'] = pd.to_numeric(df['年龄'], errors='coerce').astype('Int64')
@@ -1055,7 +1056,7 @@ def show_settings_gui():
     notebook.add(api_tab, text=get_text("api_settings"))
     
     # Language Selection
-    tk.Label(api_tab, text="语言设置 / Language:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(api_tab, text=get_text("language_settings"), font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
     language_var = tk.StringVar(value=CURRENT_LANGUAGE)
     language_frame = tk.Frame(api_tab)
     language_frame.grid(row=0, column=1, pady=5, padx=10, sticky=tk.W)
@@ -1070,8 +1071,8 @@ def show_settings_gui():
         notebook.tab(1, text=get_text("questionnaire_settings"))
         notebook.tab(2, text=get_text("file_selection"))
         
-    tk.Radiobutton(language_frame, text="中文", variable=language_var, value="zh", command=update_language).pack(side=tk.LEFT, padx=10)
-    tk.Radiobutton(language_frame, text="English", variable=language_var, value="en", command=update_language).pack(side=tk.LEFT, padx=10)
+    tk.Radiobutton(language_frame, text=get_text("chinese"), variable=language_var, value="zh", command=update_language).pack(side=tk.LEFT, padx=10)
+    tk.Radiobutton(language_frame, text=get_text("english"), variable=language_var, value="en", command=update_language).pack(side=tk.LEFT, padx=10)
     
     # API Key
     tk.Label(api_tab, text=get_text("api_key"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
@@ -1106,7 +1107,7 @@ def show_settings_gui():
     max_consecutive_spin.grid(row=1, column=1, sticky=tk.W, pady=5, padx=10)
     
     # Token limit for API analysis
-    tk.Label(q_settings_tab, text="API分析最大token数:", font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(q_settings_tab, text=get_text("api_token_limit"), font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
     token_limit_var = tk.IntVar(value=4000)
     token_frame = tk.Frame(q_settings_tab)
     token_frame.grid(row=2, column=1, pady=5, padx=10, sticky=tk.W)
@@ -1116,14 +1117,14 @@ def show_settings_gui():
     
     # Update token label when scale changes
     def update_token_label(*args):
-        token_label.config(text=f"{token_limit_var.get()} tokens")
+        token_label.config(text=f"{token_limit_var.get()} {get_text('tokens')}")
     
     token_limit_var.trace("w", update_token_label)
-    token_label = tk.Label(token_frame, text=f"{token_limit_var.get()} tokens")
+    token_label = tk.Label(token_frame, text=f"{token_limit_var.get()} {get_text('tokens')}")
     token_label.pack(side=tk.LEFT, padx=10)
     
     # MAX_TOKENS setting for individual responses
-    tk.Label(q_settings_tab, text="单次回答最大token数:", font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(q_settings_tab, text=get_text("max_tokens_per_response"), font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
     max_tokens_var = tk.IntVar(value=512)
     max_tokens_frame = tk.Frame(q_settings_tab)
     max_tokens_frame.grid(row=3, column=1, pady=5, padx=10, sticky=tk.W)
@@ -1131,23 +1132,23 @@ def show_settings_gui():
              length=200, resolution=50).pack(side=tk.LEFT)
     
     def update_max_tokens_label(*args):
-        max_tokens_label.config(text=f"{max_tokens_var.get()} tokens")
+        max_tokens_label.config(text=f"{max_tokens_var.get()} {get_text('tokens')}")
     
     max_tokens_var.trace("w", update_max_tokens_label)
-    max_tokens_label = tk.Label(max_tokens_frame, text=f"{max_tokens_var.get()} tokens")
+    max_tokens_label = tk.Label(max_tokens_frame, text=f"{max_tokens_var.get()} {get_text('tokens')}")
     max_tokens_label.pack(side=tk.LEFT, padx=10)
     
     # Age range settings
-    tk.Label(q_settings_tab, text="被试年龄范围:", font=('Arial', 10, 'bold')).grid(row=4, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(q_settings_tab, text=get_text("subject_age_range"), font=('Arial', 10, 'bold')).grid(row=4, column=0, sticky=tk.W, pady=5, padx=10)
     age_frame = tk.Frame(q_settings_tab)
     age_frame.grid(row=4, column=1, pady=5, padx=10, sticky=tk.W)
     
-    tk.Label(age_frame, text="最小年龄:").pack(side=tk.LEFT)
+    tk.Label(age_frame, text=get_text("min_age")).pack(side=tk.LEFT)
     min_age_var = tk.IntVar(value=18)
     min_age_spin = tk.Spinbox(age_frame, from_=0, to=100, textvariable=min_age_var, width=5)
     min_age_spin.pack(side=tk.LEFT, padx=5)
     
-    tk.Label(age_frame, text="最大年龄:").pack(side=tk.LEFT, padx=(10, 0))
+    tk.Label(age_frame, text=get_text("max_age")).pack(side=tk.LEFT, padx=(10, 0))
     max_age_var = tk.IntVar(value=75)
     max_age_spin = tk.Spinbox(age_frame, from_=0, to=100, textvariable=max_age_var, width=5)
     max_age_spin.pack(side=tk.LEFT, padx=5)
@@ -1169,12 +1170,12 @@ def show_settings_gui():
     max_age_var.trace("w", lambda *args: validate_age_range())
     
     # Custom scoring rules
-    tk.Label(q_settings_tab, text="自定义计分规则:", font=('Arial', 10, 'bold')).grid(row=5, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(q_settings_tab, text=get_text("scoring_rules"), font=('Arial', 10, 'bold')).grid(row=5, column=0, sticky=tk.W, pady=5, padx=10)
     
     def edit_scoring_rules():
         # Create scoring rules edit window
         scoring_window = tk.Toplevel(root)
-        scoring_window.title("编辑计分规则")
+        scoring_window.title(get_text("edit_scoring_rules"))
         scoring_window.geometry("800x600")
         scoring_window.resizable(True, True)
         
@@ -1183,7 +1184,7 @@ def show_settings_gui():
         scoring_frame.pack(fill=tk.BOTH, expand=True)
         
         # Scoring rules text
-        scoring_label = tk.Label(scoring_frame, text="计分规则设置:", font=('Arial', 10, 'bold'))
+        scoring_label = tk.Label(scoring_frame, text=get_text("scoring_rules_settings"), font=('Arial', 10, 'bold'))
         scoring_label.pack(pady=10)
         
         # Text widget for scoring rules
@@ -1233,17 +1234,17 @@ def show_settings_gui():
             # Close the window
             scoring_window.destroy()
         
-        save_button = tk.Button(button_frame, text="保存", command=save_scoring_rules, font=('Arial', 10, 'bold'), width=15)
+        save_button = tk.Button(button_frame, text=get_text("save"), command=save_scoring_rules, font=('Arial', 10, 'bold'), width=15)
         save_button.pack(side=tk.RIGHT, padx=5)
         
-        cancel_button = tk.Button(button_frame, text="取消", command=scoring_window.destroy, font=('Arial', 10), width=10)
+        cancel_button = tk.Button(button_frame, text=get_text("cancel"), command=scoring_window.destroy, font=('Arial', 10), width=10)
         cancel_button.pack(side=tk.RIGHT, padx=5)
     
-    edit_scoring_button = tk.Button(q_settings_tab, text="编辑计分规则", command=edit_scoring_rules, font=('Arial', 10))
+    edit_scoring_button = tk.Button(q_settings_tab, text=get_text("edit_scoring_rules"), command=edit_scoring_rules, font=('Arial', 10))
     edit_scoring_button.grid(row=5, column=1, sticky=tk.W, pady=5, padx=10)
     
     # New column name handling strategy
-    tk.Label(q_settings_tab, text="新列名处理策略:", font=('Arial', 10, 'bold')).grid(row=6, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(q_settings_tab, text=get_text("new_column_strategy"), font=('Arial', 10, 'bold')).grid(row=6, column=0, sticky=tk.W, pady=5, padx=10)
     column_strategy_var = tk.StringVar(value="保持原样")
     strategy_frame = tk.Frame(q_settings_tab)
     strategy_frame.grid(row=6, column=1, pady=5, padx=10, sticky=tk.W)
@@ -2031,7 +2032,10 @@ def main():
     
     # 4. Load subject background
     subjects = load_subject_background(subject_file, output_dir, min_age, max_age)
-    if not subjects:
+    if subjects == "RETURN_TO_SETTINGS":
+        # 用户选择返回设置界面
+        return True
+    elif not subjects:
         messagebox.showerror("错误", "未加载到有效被试，程序退出")
         return
     
@@ -2053,7 +2057,7 @@ def main():
     progress_window.attributes('-topmost', True)
     progress_window.lift()
     
-    progress_label = tk.Label(progress_window, text="准备开始处理...", font=('Arial', 10))
+    progress_label = tk.Label(progress_window, text=get_text("progress_ready"), font=('Arial', 10))
     progress_label.pack(pady=20)
     
     progress_bar = ttk.Progressbar(progress_window, orient=tk.HORIZONTAL, length=350, mode='determinate')

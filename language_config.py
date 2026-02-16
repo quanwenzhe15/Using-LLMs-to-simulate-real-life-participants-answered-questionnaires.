@@ -59,6 +59,31 @@ LANGUAGE_CONFIG = {
         "select_subject_file": "选择被试背景文件",
         "select_output_dir": "选择输出结果路径",
         
+        # 语言设置
+        "language_settings": "语言设置 / Language:",
+        "chinese": "中文",
+        "english": "English",
+        
+        # 条款和条件
+        "terms_agree": "我已阅读并同意上述条款和条件",
+        "terms_must_agree": "您必须同意条款和条件才能继续使用本程序",
+        "continue_button": "继续",
+        "exit_button": "退出",
+        
+        # 问卷设置详细文本
+        "api_token_limit": "API分析最大token数:",
+        "tokens": "tokens",
+        "max_tokens_per_response": "单次回答最大token数:",
+        "subject_age_range": "被试年龄范围:",
+        "scoring_rules": "自定义计分规则:",
+        "scoring_rules_settings": "计分规则设置:",
+        "edit_scoring_rules": "编辑计分规则",
+        "new_column_strategy": "新列名处理策略:",
+        
+        # 进度条文本
+        "progress_ready": "准备开始处理...",
+        "progress_processing": "处理中...",
+        
         # 错误消息
         "error_no_questionnaire": "未选择问卷文件",
         "error_no_subject": "未选择被试背景文件",
@@ -138,6 +163,31 @@ LANGUAGE_CONFIG = {
         "select_questionnaire_file": "Select Questionnaire File",
         "select_subject_file": "Select Subject Background File",
         "select_output_dir": "Select Output Directory",
+        
+        # 语言设置
+        "language_settings": "Language Settings:",
+        "chinese": "中文",
+        "english": "English",
+        
+        # 条款和条件
+        "terms_agree": "I have read and agree to the above terms and conditions",
+        "terms_must_agree": "You must agree to the terms and conditions to continue using this program",
+        "continue_button": "Continue",
+        "exit_button": "Exit",
+        
+        # 问卷设置详细文本
+        "api_token_limit": "API Analysis Token Limit:",
+        "tokens": "tokens",
+        "max_tokens_per_response": "Max Tokens per Response:",
+        "subject_age_range": "Subject Age Range:",
+        "scoring_rules": "Custom Scoring Rules:",
+        "scoring_rules_settings": "Scoring Rules Settings:",
+        "edit_scoring_rules": "Edit Scoring Rules",
+        "new_column_strategy": "New Column Name Strategy:",
+        
+        # 进度条文本
+        "progress_ready": "Ready to start processing...",
+        "progress_processing": "Processing...",
         
         # 错误消息
         "error_no_questionnaire": "No questionnaire file selected",
