@@ -307,8 +307,8 @@ BASE_URL = getattr(config, 'BASE_URL', '')
 MODEL_NAME = getattr(config, 'MODEL_NAME', '')
 
 # File Path Configuration
-SUBJECT_BACKGROUND_FILE = r"C:\Users\15896\Desktop\我的代码文件\模拟人变量以及相应水平.xlsx"  # Subject background Excel path
-OUTPUT_DIR = r"C:\Users\15896\Desktop\我的代码文件"  # Result output directory
+SUBJECT_BACKGROUND_FILE = ""  # Subject background Excel path (will be selected in GUI)
+OUTPUT_DIR = ""  # Result output directory (will be selected in GUI)
 
 MAX_TOKENS = 512  # Maximum length per response
 TEMPERATURE = 0.7  # Response diversity (0.7 = close to real human)
