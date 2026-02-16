@@ -2203,7 +2203,11 @@ def main():
     import time
     import threading
     
-    progress_window = tk.Toplevel()
+    # 创建隐藏的根窗口，避免出现空白tk弹窗
+    root_window = tk.Tk()
+    root_window.withdraw()  # 隐藏根窗口
+    
+    progress_window = tk.Toplevel(root_window)
     progress_window.title("处理进度")
     progress_window.geometry("400x200")
     progress_window.resizable(False, False)
@@ -2242,7 +2246,8 @@ def main():
                 progress_bar['value'] = current_progress
                 progress_label.config(text=f"处理被试 {current_progress}/{total_subjects}")
                 status_label.config(text=current_status)
-                progress_window.update_idletasks()
+                # 强制处理所有待处理的事件，确保取消按钮能够响应
+                progress_window.update()
         except:
             pass  # 窗口可能已被销毁
     
@@ -2276,6 +2281,7 @@ def main():
             def delayed_destroy():
                 try:
                     progress_window.destroy()
+                    root_window.destroy()  # 同时销毁根窗口
                 except:
                     pass
             
@@ -2307,6 +2313,9 @@ def main():
     
     try:
         for i, subject in enumerate(subjects, 1):
+            # 强制处理UI事件，确保取消按钮能够响应
+            safe_update_ui()
+            
             # 检查取消状态 - 使用事件机制
             if cancel_event.is_set() or should_cancel or not processing_active:
                 print("检测到取消请求，停止处理")
@@ -2366,6 +2375,9 @@ def main():
                 last_update_time = time.time()
                 
                 for future in concurrent.futures.as_completed(future_to_question):
+                    # 强制处理UI事件，确保取消按钮能够响应
+                    safe_update_ui()
+                    
                     completed_count += 1
                     args = future_to_question[future]
                     question = args[1]
@@ -2447,6 +2459,7 @@ def main():
         # 关闭进度条弹窗
         try:
             progress_window.destroy()
+            root_window.destroy()  # 同时销毁根窗口
         except:
             pass
         
