@@ -61,6 +61,52 @@ MAX_RETRY_ATTEMPTS = 3  # 最大重试次数
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+def show_language_selection():
+    """显示语言选择弹窗"""
+    # 导入语言配置
+    get_text, get_column_names, set_language, CURRENT_LANGUAGE = import_language_config()
+    
+    # 创建语言选择窗口
+    lang_root = tk.Tk()
+    lang_root.title("Language Selection / 语言选择")
+    lang_root.geometry("400x200")
+    lang_root.resizable(False, False)
+    
+    # 设置窗口居中
+    lang_root.update_idletasks()
+    x = (lang_root.winfo_screenwidth() - lang_root.winfo_reqwidth()) // 2
+    y = (lang_root.winfo_screenheight() - lang_root.winfo_reqheight()) // 2
+    lang_root.geometry(f"+{x}+{y}")
+    
+    # 语言选择标签
+    tk.Label(lang_root, text="Please select your language / 请选择您的语言", 
+             font=('Arial', 12, 'bold')).pack(pady=20)
+    
+    # 语言选择变量
+    selected_language = tk.StringVar(value=CURRENT_LANGUAGE)
+    
+    def confirm_language():
+        """确认语言选择"""
+        set_language(selected_language.get())
+        lang_root.destroy()
+    
+    # 语言选择按钮
+    button_frame = tk.Frame(lang_root)
+    button_frame.pack(pady=20)
+    
+    chinese_button = tk.Button(button_frame, text="中文 (Chinese)", 
+                              font=('Arial', 12, 'bold'), width=15, height=2,
+                              command=lambda: [selected_language.set("zh"), confirm_language()])
+    chinese_button.pack(side=tk.LEFT, padx=10)
+    
+    english_button = tk.Button(button_frame, text="English (英文)", 
+                              font=('Arial', 12, 'bold'), width=15, height=2,
+                              command=lambda: [selected_language.set("en"), confirm_language()])
+    english_button.pack(side=tk.LEFT, padx=10)
+    
+    # 运行语言选择窗口
+    lang_root.mainloop()
+
 # Create welcome and license agreement window
 def show_welcome_and_license():
     root = tk.Tk()
@@ -76,84 +122,86 @@ def show_welcome_and_license():
     welcome_label = tk.Label(main_frame, text=get_text("welcome_message"), font=('Arial', 14, 'bold'))
     welcome_label.pack(pady=10)
     
+
+    
     # Create a notebook for different sections
     notebook = ttk.Notebook(main_frame)
     notebook.pack(fill=tk.BOTH, expand=True, pady=10)
     
     # Functionality tab
     func_tab = tk.Frame(notebook)
-    notebook.add(func_tab, text="功能介绍")
+    notebook.add(func_tab, text=get_text("function_introduction"))
     
     func_text = tk.Text(func_tab, wrap=tk.WORD, padx=10, pady=10)
     func_text.pack(fill=tk.BOTH, expand=True)
-    func_text.insert(tk.END, "本系统主要功能：\n\n")
-    func_text.insert(tk.END, "1. 支持多种问卷文件格式：Excel (.xlsx, .xls)、CSV (.csv) 和 Word (.docx)\n")
-    func_text.insert(tk.END, "2. 自动解析问卷结构，提取题目、维度、计分标准等信息\n")
-    func_text.insert(tk.END, "3. 支持随机题目顺序，可限制同一维度连续出现数量\n")
-    func_text.insert(tk.END, "4. 集成大模型 API，处理复杂问卷结构\n")
-    func_text.insert(tk.END, "5. 模拟被试回答，生成标准化结果文件\n")
-    func_text.insert(tk.END, "6. 支持反向计分题处理\n")
-    func_text.insert(tk.END, "7. 支持自定义计分规则，可根据需要修改计分标准\n")
+    func_text.insert(tk.END, get_text("system_features_title") + "\n\n")
+    func_text.insert(tk.END, "1. " + get_text("feature_1") + "\n")
+    func_text.insert(tk.END, "2. " + get_text("feature_2") + "\n")
+    func_text.insert(tk.END, "3. " + get_text("feature_3") + "\n")
+    func_text.insert(tk.END, "4. " + get_text("feature_4") + "\n")
+    func_text.insert(tk.END, "5. " + get_text("feature_5") + "\n")
+    func_text.insert(tk.END, "6. " + get_text("feature_6") + "\n")
+    func_text.insert(tk.END, "7. " + get_text("feature_7") + "\n")
     func_text.config(state=tk.DISABLED)
     
     # File format tab
     file_tab = tk.Frame(notebook)
-    notebook.add(file_tab, text="文件格式要求")
+    notebook.add(file_tab, text=get_text("file_format_requirements"))
     
     file_text = tk.Text(file_tab, wrap=tk.WORD, padx=10, pady=10)
     file_text.pack(fill=tk.BOTH, expand=True)
-    file_text.insert(tk.END, "文件格式要求：\n\n")
-    file_text.insert(tk.END, "问卷文件：\n")
-    file_text.insert(tk.END, "- Excel 文件 (.xlsx, .xls)：必须包含以下列：题目ID、题目所属维度、题目内容、计分标准\n")
-    file_text.insert(tk.END, "- CSV 文件 (.csv)：必须包含以下列：题目ID、题目所属维度、题目内容、计分标准\n")
-    file_text.insert(tk.END, "- Word 文件 (.docx)：按维度分节，维度标题以冒号结尾\n")
-    file_text.insert(tk.END, "- 题目格式要求：必须包含来回双引号，例如：4. \"People in my family felt close to each other.\" (R)\n")
-    file_text.insert(tk.END, "- 支持的题目格式：\n")
-    file_text.insert(tk.END, "  * 标准数字编号：1. \"Question text\" (R)\n")
-    file_text.insert(tk.END, "  * 带星号：*1. \"Question text\" (R)\n")
-    file_text.insert(tk.END, "  * 项目符号：• \"Question text\" (R)\n")
-    file_text.insert(tk.END, "  * 带空格：1 \"Question text\" (R)\n")
-    file_text.insert(tk.END, "- 计分规则格式：Coding: 后连接的一句话，以句号结尾，例如：Coding: 1 Never true; 2 Rarely true; 3 Sometimes true; 4 Often true; 5 Very often true. \n")
-    file_text.insert(tk.END, "- 支持反向计分标记：(R) 或 (反向)\n")
-    file_text.insert(tk.END, "- 支持多种计分范围：1-5、1-7、1-6等（自动识别）\n\n")
-    file_text.insert(tk.END, "被试背景文件：\n")
-    file_text.insert(tk.END, "- 支持格式：Excel (.xlsx, .xls) 和 CSV (.csv)\n")
-    file_text.insert(tk.END, "- 强制要求的列：被试ID、年龄、性别\n")
-    file_text.insert(tk.END, "- 其他列会被自动解析并加入到提示中\n")
-    file_text.insert(tk.END, "- 空值会被填充为'不适用'，并生成缺失值报告\n")
-    file_text.insert(tk.END, "- 如果某列缺失值超过20%，会弹窗告知并让用户选择是否继续\n")
+    file_text.insert(tk.END, get_text("file_format_requirements_title") + "\n\n")
+    file_text.insert(tk.END, get_text("questionnaire_file_title") + "\n")
+    file_text.insert(tk.END, "- " + get_text("excel_file_requirement") + "\n")
+    file_text.insert(tk.END, "- " + get_text("csv_file_requirement") + "\n")
+    file_text.insert(tk.END, "- " + get_text("word_file_requirement") + "\n")
+    file_text.insert(tk.END, "- " + get_text("question_format_requirement") + "\n")
+    file_text.insert(tk.END, "- " + get_text("supported_question_formats") + "\n")
+    file_text.insert(tk.END, "  * " + get_text("standard_numbering") + "\n")
+    file_text.insert(tk.END, "  * " + get_text("with_asterisk") + "\n")
+    file_text.insert(tk.END, "  * " + get_text("bullet_point") + "\n")
+    file_text.insert(tk.END, "  * " + get_text("with_space") + "\n")
+    file_text.insert(tk.END, "- " + get_text("scoring_rule_format") + "\n")
+    file_text.insert(tk.END, "- " + get_text("reverse_scoring_markers") + "\n")
+    file_text.insert(tk.END, "- " + get_text("multiple_scoring_ranges") + "\n\n")
+    file_text.insert(tk.END, get_text("subject_background_file_title") + "\n")
+    file_text.insert(tk.END, "- " + get_text("supported_formats") + "\n")
+    file_text.insert(tk.END, "- " + get_text("mandatory_columns") + "\n")
+    file_text.insert(tk.END, "- " + get_text("other_columns") + "\n")
+    file_text.insert(tk.END, "- " + get_text("null_value_handling") + "\n")
+    file_text.insert(tk.END, "- " + get_text("high_missing_value_handling") + "\n")
     file_text.config(state=tk.DISABLED)
     
     # Usage guide tab
     guide_tab = tk.Frame(notebook)
-    notebook.add(guide_tab, text="使用指南")
+    notebook.add(guide_tab, text=get_text("usage_guide"))
     
     guide_text = tk.Text(guide_tab, wrap=tk.WORD, padx=10, pady=10)
     guide_text.pack(fill=tk.BOTH, expand=True)
-    guide_text.insert(tk.END, "使用指南：\n\n")
-    guide_text.insert(tk.END, "1. 运行脚本后，在欢迎窗口中阅读并同意协议\n")
-    guide_text.insert(tk.END, "2. 在设置窗口中配置 API 参数（如需要）\n")
-    guide_text.insert(tk.END, "3. 选择是否启用随机题目顺序及连续维度限制\n")
-    guide_text.insert(tk.END, "4. 选择问卷文件（Excel、CSV 或 Word 格式）\n")
-    guide_text.insert(tk.END, "5. 选择被试背景文件（Excel 格式）\n")
-    guide_text.insert(tk.END, "6. 选择输出结果路径\n")
-    guide_text.insert(tk.END, "7. 点击'开始运行'按钮开始处理\n")
+    guide_text.insert(tk.END, get_text("usage_guide_title") + "\n\n")
+    guide_text.insert(tk.END, "1. " + get_text("usage_step_1") + "\n")
+    guide_text.insert(tk.END, "2. " + get_text("usage_step_2") + "\n")
+    guide_text.insert(tk.END, "3. " + get_text("usage_step_3") + "\n")
+    guide_text.insert(tk.END, "4. " + get_text("usage_step_4") + "\n")
+    guide_text.insert(tk.END, "5. " + get_text("usage_step_5") + "\n")
+    guide_text.insert(tk.END, "6. " + get_text("usage_step_6") + "\n")
+    guide_text.insert(tk.END, "7. " + get_text("usage_step_7") + "\n")
     guide_text.config(state=tk.DISABLED)
     
     # License tab
     license_tab = tk.Frame(notebook)
-    notebook.add(license_tab, text="许可证协议")
+    notebook.add(license_tab, text=get_text("license_agreement"))
     
     license_text = tk.Text(license_tab, wrap=tk.WORD, padx=10, pady=10)
     license_text.pack(fill=tk.BOTH, expand=True)
-    license_text.insert(tk.END, "GNU GENERAL PUBLIC LICENSE\n")
-    license_text.insert(tk.END, "Version 3, 29 June 2007\n\n")
-    license_text.insert(tk.END, "本程序是自由软件：您可以根据自由软件基金会发布的 GNU 通用公共许可证条款\n")
-    license_text.insert(tk.END, "（本许可证的第 3 版或您选择的任何更高版本）来重新分发和/或修改它。\n\n")
-    license_text.insert(tk.END, "本程序的发布是希望它能有用，但没有任何担保；甚至没有对适销性或\n")
-    license_text.insert(tk.END, "特定用途适用性的默示担保。有关详细信息，请参阅 GNU 通用公共许可证。\n\n")
-    license_text.insert(tk.END, "您应该已经收到了一份 GNU 通用公共许可证的副本。如果没有，请参见\n")
-    license_text.insert(tk.END, "<https://www.gnu.org/licenses/>.\n")
+    license_text.insert(tk.END, get_text("license_title") + "\n")
+    license_text.insert(tk.END, get_text("license_version") + "\n\n")
+    license_text.insert(tk.END, get_text("license_paragraph_1") + "\n")
+    license_text.insert(tk.END, get_text("license_paragraph_2") + "\n\n")
+    license_text.insert(tk.END, get_text("license_paragraph_3") + "\n")
+    license_text.insert(tk.END, get_text("license_paragraph_4") + "\n\n")
+    license_text.insert(tk.END, get_text("license_paragraph_5") + "\n")
+    license_text.insert(tk.END, get_text("license_website") + "\n")
     license_text.config(state=tk.DISABLED)
     
     # Agreement frame
@@ -180,17 +228,17 @@ def show_welcome_and_license():
         import sys
         sys.exit(0)
     
-    continue_button = tk.Button(button_frame, text=get_text("continue_button"), command=on_continue, font=('Arial', 10, 'bold'), width=15)
-    continue_button.pack(side=tk.RIGHT, padx=5)
+    continue_button = tk.Button(button_frame, text=get_text("continue_button"), command=on_continue, font=('Arial', 12, 'bold'), width=20)
+    continue_button.pack(side=tk.RIGHT, padx=10)
     
-    cancel_button = tk.Button(button_frame, text=get_text("exit_button"), command=on_cancel, font=('Arial', 10), width=10)
-    cancel_button.pack(side=tk.RIGHT, padx=5)
+    cancel_button = tk.Button(button_frame, text=get_text("exit_button"), command=on_cancel, font=('Arial', 12), width=15)
+    cancel_button.pack(side=tk.RIGHT, padx=10)
     
     # Run the window
     root.mainloop()
 
-# Show welcome and license window
-show_welcome_and_license()
+# 程序入口点已移至if __name__ == "__main__":块中
+# 此处不再直接调用，避免重复显示
 
 # Check and install required dependencies with user consent
 required_packages = ['tenacity', 'python-docx']
@@ -388,7 +436,20 @@ def load_subject_background(file_path, output_dir, min_age=18, max_age=75):
         mandatory_cols = ['被试ID', '年龄', '性别']
         missing_mandatory = [col for col in mandatory_cols if col not in df.columns]
         if missing_mandatory:
-            raise ValueError(f"背景文件缺少必要列: {', '.join(missing_mandatory)}")
+            # 使用全局导入的tkinter模块
+            import tkinter as tk_local
+            from tkinter import messagebox
+            
+            root = tk_local.Tk()
+            root.withdraw()
+            
+            message = f"{get_text('missing_mandatory_columns')}: {', '.join(missing_mandatory)}\n\n{get_text('no_valid_subjects_loaded')}"
+            messagebox.showerror(get_text("error"), message)
+            
+            root.destroy()
+            
+            # 返回特殊值表示需要返回设置界面
+            return "RETURN_TO_SETTINGS"
         
         # 调试信息：显示前几行数据
         print("前3行数据:")
@@ -422,8 +483,8 @@ def load_subject_background(file_path, output_dir, min_age=18, max_age=75):
             root = tk_local.Tk()
             root.withdraw()
             
-            message = f"以下列的缺失值超过20%：\n{', '.join(columns_with_high_missing)}\n\n是否继续运行？"
-            user_choice = messagebox.askyesno("警告：高缺失值", message)
+            message = f"{get_text('high_missing_value_columns')}\n{', '.join(columns_with_high_missing)}\n\n{get_text('continue_running')}"
+            user_choice = messagebox.askyesno(get_text("warning_high_missing_values"), message)
             
             root.destroy()
             
@@ -457,11 +518,11 @@ def load_subject_background(file_path, output_dir, min_age=18, max_age=75):
             invalid_ages = invalid_age_rows['年龄'].dropna().unique()
             invalid_ages_str = ', '.join(map(str, sorted(invalid_ages)))
             
-            message = f"发现 {invalid_count} 个被试的年龄不在设定范围({min_age}-{max_age}岁)内。\n"
-            message += f"无效年龄: {invalid_ages_str}\n\n"
-            message += "是否继续运行（将自动过滤掉年龄无效的被试）？"
+            message = f"{get_text('age_out_of_range')} {invalid_count} {get_text('subjects')} ({min_age}-{max_age} {get_text('years')})\n"
+            message += f"{get_text('invalid_ages')}: {invalid_ages_str}\n\n"
+            message += get_text('continue_with_filter')
             
-            user_choice = messagebox.askyesno("警告：年龄范围检查", message)
+            user_choice = messagebox.askyesno(get_text("warning_age_range"), message)
             root.destroy()
             
             if not user_choice:
@@ -1055,24 +1116,7 @@ def show_settings_gui():
     api_tab = tk.Frame(notebook)
     notebook.add(api_tab, text=get_text("api_settings"))
     
-    # Language Selection
-    tk.Label(api_tab, text=get_text("language_settings"), font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
-    language_var = tk.StringVar(value=CURRENT_LANGUAGE)
-    language_frame = tk.Frame(api_tab)
-    language_frame.grid(row=0, column=1, pady=5, padx=10, sticky=tk.W)
-    
-    def update_language():
-        """更新界面语言"""
-        set_language(language_var.get())
-        # 更新窗口标题
-        root.title(get_text("welcome_title"))
-        # 更新标签页标题
-        notebook.tab(0, text=get_text("api_settings"))
-        notebook.tab(1, text=get_text("questionnaire_settings"))
-        notebook.tab(2, text=get_text("file_selection"))
-        
-    tk.Radiobutton(language_frame, text=get_text("chinese"), variable=language_var, value="zh", command=update_language).pack(side=tk.LEFT, padx=10)
-    tk.Radiobutton(language_frame, text=get_text("english"), variable=language_var, value="en", command=update_language).pack(side=tk.LEFT, padx=10)
+
     
     # API Key
     tk.Label(api_tab, text=get_text("api_key"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
@@ -1192,32 +1236,32 @@ def show_settings_gui():
         scoring_text.pack(fill=tk.BOTH, expand=True, pady=10)
         
         # Insert default scoring rules with examples
-        default_rules = "# 计分规则设置\n\n"
-        default_rules += "## 1. 计分范围识别规则\n"
-        default_rules += "- 自动识别计分范围：根据计分标准中的数字确定\n"
-        default_rules += "  例如：包含 '7' 则为 1-7 点计分，包含 '6' 则为 1-6 点计分\n"
-        default_rules += "  默认为 1-5 点计分\n\n"
+        default_rules = f"# {get_text('scoring_rules_title')}\n\n"
+        default_rules += f"## 1. {get_text('score_range_recognition_rule')}\n"
+        default_rules += f"- {get_text('auto_recognize_score_range')}\n"
+        default_rules += f"  {get_text('example_score_range_1')}\n"
+        default_rules += f"  {get_text('default_score_range')}\n\n"
         
-        default_rules += "## 2. 反向计分规则\n"
-        default_rules += "- 自动识别反向计分标记：(R) 或 (反向)\n"
-        default_rules += "- 反向计分计算：(最小值 + 最大值) - 原始分数\n"
-        default_rules += "  例如：5点计分中，原始分数为 1，则反向计分为 5\n"
-        default_rules += "  例如：7点计分中，原始分数为 2，则反向计分为 6\n\n"
+        default_rules += f"## 2. {get_text('reverse_scoring_rule')}\n"
+        default_rules += f"- {get_text('auto_recognize_reverse_markers')}\n"
+        default_rules += f"- {get_text('reverse_scoring_calculation')}\n"
+        default_rules += f"  {get_text('example_reverse_scoring_1')}\n"
+        default_rules += f"  {get_text('example_reverse_scoring_2')}\n\n"
         
-        default_rules += "## 3. 维度分数计算规则\n"
-        default_rules += "- 维度分数 = 该维度下所有题目分数的总和\n"
-        default_rules += "- 支持缺失值处理：仅一个缺失值时使用均值替换\n"
-        default_rules += "- 无缺失值时直接求和\n\n"
+        default_rules += f"## 3. {get_text('dimension_score_calculation_rule')}\n"
+        default_rules += f"- {get_text('dimension_score_sum')}\n"
+        default_rules += f"- {get_text('missing_value_handling')}\n"
+        default_rules += f"- {get_text('no_missing_values')}\n\n"
         
-        default_rules += "## 4. 自定义规则示例\n"
-        default_rules += "# 示例1：修改计分范围识别\n"
-        default_rules += "# score_range = (1, 5)  # 强制使用5点计分\n\n"
+        default_rules += f"## 4. {get_text('custom_rule_examples')}\n"
+        default_rules += f"# {get_text('example_modify_score_range')}\n"
+        default_rules += f"# score_range = (1, 5)  # {get_text('force_5_point_scoring')}\n\n"
         
-        default_rules += "# 示例2：修改反向计分计算\n"
-        default_rules += "# reverse_score = max_score - (original_score - min_score)\n\n"
+        default_rules += f"# {get_text('example_modify_reverse_calculation')}\n"
+        default_rules += f"# reverse_score = max_score - (original_score - min_score)\n\n"
         
-        default_rules += "# 示例3：修改维度分数计算为平均值\n"
-        default_rules += "# dimension_score = sum(scores) / len(scores)\n\n"
+        default_rules += f"# {get_text('example_modify_dimension_calculation')}\n"
+        default_rules += f"# dimension_score = sum(scores) / len(scores)\n\n"
         
         scoring_text.insert(tk.END, default_rules)
         
@@ -1245,23 +1289,51 @@ def show_settings_gui():
     
     # New column name handling strategy
     tk.Label(q_settings_tab, text=get_text("new_column_strategy"), font=('Arial', 10, 'bold')).grid(row=6, column=0, sticky=tk.W, pady=5, padx=10)
-    column_strategy_var = tk.StringVar(value="保持原样")
+    column_strategy_var = tk.StringVar(value="strategy_keep_original")
     strategy_frame = tk.Frame(q_settings_tab)
     strategy_frame.grid(row=6, column=1, pady=5, padx=10, sticky=tk.W)
     
     # Strategy options with descriptions
+    strategy_widgets = []
+    
+    # Create initial strategy options
     strategies = [
-        ("保持原样", "保持中文字段名原样（推荐，AI能理解）"),
-        ("自动翻译", "尝试自动翻译为英文"),
-        ("拼音转换", "使用拼音作为英文标识"),
-        ("自定义映射", "在编辑提示模板时手动指定英文名")
+        ("strategy_keep_original", get_text("strategy_keep_original"), get_text("strategy_keep_original_desc")),
+        ("strategy_auto_translate", get_text("strategy_auto_translate"), get_text("strategy_auto_translate_desc")),
+        ("strategy_pinyin", get_text("strategy_pinyin"), get_text("strategy_pinyin_desc")),
+        ("strategy_custom_map", get_text("strategy_custom_map"), get_text("strategy_custom_map_desc"))
     ]
     
-    for i, (strategy, description) in enumerate(strategies):
-        rb = tk.Radiobutton(strategy_frame, text=strategy, variable=column_strategy_var, value=strategy)
+    for i, (strategy_id, strategy_text, description) in enumerate(strategies):
+        rb = tk.Radiobutton(strategy_frame, text=strategy_text, variable=column_strategy_var, value=strategy_id)
         rb.grid(row=i, column=0, sticky=tk.W)
+        strategy_widgets.append(rb)
+        
         desc_label = tk.Label(strategy_frame, text=description, font=('Arial', 8), fg='gray')
         desc_label.grid(row=i, column=1, sticky=tk.W, padx=(5, 0))
+        strategy_widgets.append(desc_label)
+    
+    def update_strategy_texts():
+        """更新策略选项文本"""
+        # 更新策略选项的文本
+        strategies = [
+            ("strategy_keep_original", get_text("strategy_keep_original"), get_text("strategy_keep_original_desc")),
+            ("strategy_auto_translate", get_text("strategy_auto_translate"), get_text("strategy_auto_translate_desc")),
+            ("strategy_pinyin", get_text("strategy_pinyin"), get_text("strategy_pinyin_desc")),
+            ("strategy_custom_map", get_text("strategy_custom_map"), get_text("strategy_custom_map_desc"))
+        ]
+        
+        # 更新每个策略选项的文本
+        for i, (strategy_id, strategy_text, description) in enumerate(strategies):
+            # 更新单选按钮文本
+            if i < len(strategy_widgets) // 2:
+                rb = strategy_widgets[i * 2]
+                rb.config(text=strategy_text)
+            
+            # 更新描述标签文本
+            if i < len(strategy_widgets) // 2:
+                desc_label = strategy_widgets[i * 2 + 1]
+                desc_label.config(text=description)
     
     # ---------------- File Selection Tab ----------------
     file_tab = tk.Frame(notebook)
@@ -1391,14 +1463,23 @@ Please answer directly without additional formatting."""
         root.destroy()
         
     # Button frame
-    button_frame = tk.Frame(main_frame, pady=10)
-    button_frame.pack(fill=tk.X)
+    button_frame = tk.Frame(main_frame, pady=20)
+    button_frame.pack(fill=tk.X, padx=20)
     
-    # Prompt edit button
-    tk.Button(button_frame, text=get_text("edit_prompt_template"), command=edit_prompt, font=('Arial', 10), width=15).pack(side=tk.LEFT, padx=5)
+    # Prompt edit button (左侧)
+    edit_button = tk.Button(button_frame, text=get_text("edit_prompt_template"), 
+                           command=edit_prompt, font=('Arial', 10), width=15)
+    edit_button.pack(side=tk.LEFT, padx=10)
     
-    # Submit button
-    tk.Button(button_frame, text=get_text("start_processing"), command=submit, font=('Arial', 10, 'bold'), width=20).pack(side=tk.RIGHT, padx=5)
+    # 添加一个填充空间，确保按钮居中分布
+    tk.Frame(button_frame, width=100).pack(side=tk.LEFT, expand=True)
+    
+    # Submit button (右侧)
+    start_button = tk.Button(button_frame, text=get_text("start_processing"), 
+                           command=submit, font=('Arial', 12, 'bold'), width=20)
+    start_button.pack(side=tk.RIGHT, padx=10)
+    
+
     
     # Run the GUI
     root.mainloop()
@@ -1958,7 +2039,10 @@ Please return only the JSON array, no other text."""
 # ---------------- Main Process ----------------
 def main():
     # 声明全局变量
-    global FATAL_API_ERROR, DASHSCOPE_API_KEY, BASE_URL, MODEL_NAME, MAX_CONSECUTIVE_SAME_DIM
+    global FATAL_API_ERROR, DASHSCOPE_API_KEY, BASE_URL, MODEL_NAME, MAX_CONSECUTIVE_SAME_DIM, RETURN_TO_SETTINGS_FLAG
+    
+    # 初始化返回设置界面标志
+    RETURN_TO_SETTINGS_FLAG = False
     
     # 清理所有可能的tkinter窗口，确保干净的状态
     try:
@@ -2050,7 +2134,7 @@ def main():
     
     progress_window = tk.Toplevel()
     progress_window.title("处理进度")
-    progress_window.geometry("400x150")
+    progress_window.geometry("400x200")
     progress_window.resizable(False, False)
     
     # 确保窗口在最前面
@@ -2058,13 +2142,64 @@ def main():
     progress_window.lift()
     
     progress_label = tk.Label(progress_window, text=get_text("progress_ready"), font=('Arial', 10))
-    progress_label.pack(pady=20)
+    progress_label.pack(pady=10)
     
     progress_bar = ttk.Progressbar(progress_window, orient=tk.HORIZONTAL, length=350, mode='determinate')
-    progress_bar.pack(pady=10)
+    progress_bar.pack(pady=5)
     
     status_label = tk.Label(progress_window, text="", font=('Arial', 8), fg='gray')
     status_label.pack(pady=5)
+    
+    # 添加暂停/继续按钮
+    button_frame = tk.Frame(progress_window)
+    button_frame.pack(pady=10)
+    
+    # 暂停状态标志
+    is_paused = False
+    
+    def toggle_pause():
+        """切换暂停/继续状态"""
+        nonlocal is_paused
+        is_paused = not is_paused
+        if is_paused:
+            pause_button.config(text=get_text("resume_button"))
+            status_label.config(text="处理已暂停")
+        else:
+            pause_button.config(text=get_text("pause_button"))
+            status_label.config(text="处理继续中...")
+    
+    pause_button = tk.Button(button_frame, text=get_text("pause_button"), command=toggle_pause, font=('Arial', 10))
+    pause_button.pack(side=tk.LEFT, padx=10)
+    
+    def cancel_processing():
+        """取消处理并自动保存已输出数据"""
+        nonlocal completed_successfully, all_results, failed_records
+        
+        # 自动保存已输出的数据
+        if all_results:
+            try:
+                # 保存当前结果
+                save_current_results(all_results, failed_records, out_dir, output_format, is_final=False, output_filename=output_filename)
+                
+                # 显示保存成功消息
+                from tkinter import messagebox
+                messagebox.showinfo("取消处理", f"已自动保存 {len(all_results)} 个被试的处理结果")
+            except Exception as e:
+                print(f"保存结果时出错: {e}")
+        else:
+            print("没有需要保存的结果数据")
+        
+        completed_successfully = False
+        progress_window.destroy()
+        
+        # 触发返回设置界面的标志
+        global RETURN_TO_SETTINGS_FLAG
+        RETURN_TO_SETTINGS_FLAG = True
+        
+        return True
+    
+    cancel_button = tk.Button(button_frame, text=get_text("cancel_button"), command=cancel_processing, font=('Arial', 10))
+    cancel_button.pack(side=tk.LEFT, padx=10)
     
     total_subjects = len(subjects)
     progress_bar['maximum'] = total_subjects
@@ -2081,6 +2216,15 @@ def main():
         for i, subject in enumerate(subjects, 1):
             # Check fatal error: stop processing new subjects
             if FATAL_API_ERROR:
+                break
+            
+            # 检查暂停状态
+            while is_paused:
+                progress_window.update()
+                time.sleep(0.1)  # 短暂延迟，避免CPU占用过高
+                
+            # 检查取消状态
+            if not progress_window.winfo_exists():
                 break
             
             # 更新进度条
@@ -2246,8 +2390,14 @@ def main():
                 # 用户选择退出程序
                 return False
     
+    # 检查是否需要返回设置界面
+    if RETURN_TO_SETTINGS_FLAG:
+        return True
+    
     # 如果程序没有正常完成或者用户不返回设置，返回False
     return False
+
+
 
 if __name__ == "__main__":
     # Create necessary directories for application packaging
@@ -2263,6 +2413,12 @@ if __name__ == "__main__":
     
     print(f"Created icon directory: {icon_dir}")
     print(f"Icon placeholder created at: {icon_placeholder}")
+    
+    # 首先显示语言选择弹窗
+    show_language_selection()
+    
+    # 然后显示欢迎和条款窗口
+    show_welcome_and_license()
     
     # PyInstaller is only needed for building, not for running
     # 只在构建时需要，运行时不需要导入
