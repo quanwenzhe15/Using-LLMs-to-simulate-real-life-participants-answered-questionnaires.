@@ -13,6 +13,8 @@ import pandas as pd
 from pathlib import Path
 import concurrent.futures
 import sys
+import time
+from collections import deque
 
 def resource_path(relative_path):
     """获取资源文件的绝对路径，兼容PyInstaller打包后的环境"""
@@ -24,6 +26,37 @@ def resource_path(relative_path):
         base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
 
+# 动态导入多语言配置，兼容打包环境
+def import_language_config():
+    """动态导入多语言配置"""
+    try:
+        # 尝试直接导入
+        from language_config import get_text, get_column_names, set_language, CURRENT_LANGUAGE
+        return get_text, get_column_names, set_language, CURRENT_LANGUAGE
+    except ImportError:
+        # 如果直接导入失败，尝试从资源路径导入
+        import sys
+        import importlib.util
+        
+        language_config_path = resource_path("language_config.py")
+        
+        # 使用importlib动态导入
+        spec = importlib.util.spec_from_file_location("language_config", language_config_path)
+        language_config = importlib.util.module_from_spec(spec)
+        sys.modules["language_config"] = language_config
+        spec.loader.exec_module(language_config)
+        
+        return language_config.get_text, language_config.get_column_names, language_config.set_language, language_config.CURRENT_LANGUAGE
+
+# 导入多语言配置函数
+get_text, get_column_names, set_language, CURRENT_LANGUAGE = import_language_config()
+
+# API错误监控全局变量
+API_ERROR_HISTORY = deque(maxlen=5)  # 记录最近5次API调用状态
+CONSECUTIVE_FAILURES = 0  # 连续失败次数
+MAX_CONSECUTIVE_FAILURES = 5  # 最大允许连续失败次数
+MAX_RETRY_ATTEMPTS = 3  # 最大重试次数
+
 # Show welcome and license agreement window
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -31,7 +64,7 @@ from tkinter import messagebox, ttk
 # Create welcome and license agreement window
 def show_welcome_and_license():
     root = tk.Tk()
-    root.title("问卷模拟系统 - 欢迎")
+    root.title(get_text("welcome_title"))
     root.geometry("700x600")
     root.resizable(True, True)
     
@@ -40,7 +73,7 @@ def show_welcome_and_license():
     main_frame.pack(fill=tk.BOTH, expand=True)
     
     # Welcome message
-    welcome_label = tk.Label(main_frame, text="欢迎使用EasyPsych问卷模拟系统", font=('Arial', 14, 'bold'))
+    welcome_label = tk.Label(main_frame, text=get_text("welcome_message"), font=('Arial', 14, 'bold'))
     welcome_label.pack(pady=10)
     
     # Create a notebook for different sections
@@ -743,12 +776,18 @@ if 'DEBUG_MODE' in globals() and DEBUG_MODE:
 
 def process_single_question(args):
     """Process a single question for a subject (for concurrent execution)"""
+    global API_ERROR_HISTORY, CONSECUTIVE_FAILURES, MAX_CONSECUTIVE_FAILURES, MAX_RETRY_ATTEMPTS
+    
     subject, question, column_strategy, api_settings = args
     
     try:
         prompt = generate_subject_prompt(subject, question, column_strategy)
         raw_resp = call_llm(prompt, api_settings.get('max_tokens'))
         score, reason = parse_question_response(raw_resp, question)
+        
+        # API调用成功，记录成功状态
+        API_ERROR_HISTORY.append(True)
+        CONSECUTIVE_FAILURES = 0
         
         # 动态构建响应记录
         response_record = {
@@ -776,6 +815,23 @@ def process_single_question(args):
         return response_record, None
         
     except Exception as error_msg:
+        # API调用失败，记录失败状态
+        API_ERROR_HISTORY.append(False)
+        CONSECUTIVE_FAILURES += 1
+        
+        # 检查是否达到连续失败阈值
+        if CONSECUTIVE_FAILURES >= MAX_CONSECUTIVE_FAILURES:
+            # 检查最近5次调用中失败次数是否超过阈值
+            recent_failures = list(API_ERROR_HISTORY)[-5:]
+            failure_count = recent_failures.count(False)
+            
+            if failure_count >= MAX_CONSECUTIVE_FAILURES:
+                # 触发API错误警报
+                global FATAL_API_ERROR, FATAL_ERROR_MSG
+                FATAL_API_ERROR = True
+                FATAL_ERROR_MSG = f"连续API调用失败次数过多（{failure_count}/5），请检查网络连接和API账户余额"
+                print(f"🔴 API错误警报：连续失败{failure_count}次，程序将暂停")
+        
         # 构建失败记录
         failed_response = {
             "被试ID": subject['subject_id'],
@@ -881,7 +937,7 @@ def get_random_questions(original_questions):
         if valid:
             return random_questions
 
-def save_current_results(all_results, failed_records, out_dir, output_format="xlsx", is_final=False):
+def save_current_results(all_results, failed_records, out_dir, output_format="xlsx", is_final=False, output_filename="EasyPsych_Results"):
     """Save current results immediately (even if process is stopped)"""
     if all_results:
         df_out = pd.DataFrame(all_results)
@@ -929,12 +985,12 @@ def save_current_results(all_results, failed_records, out_dir, output_format="xl
         
         # Generate filename
         if is_final:
-            # 正常完成时使用固定文件名
+            # 正常完成时使用用户自定义文件名（默认EasyPsych_Results）
             if output_format == "csv":
-                output_file = out_dir / f"EasyPsych_Results.csv"
+                output_file = out_dir / f"{output_filename}.csv"
                 df_out.to_csv(output_file, index=False, encoding='utf-8-sig')
             else:
-                output_file = out_dir / f"EasyPsych_Results.xlsx"
+                output_file = out_dir / f"{output_filename}.xlsx"
                 df_out.to_excel(output_file, index=False, engine='openpyxl')
         else:
             # 中断时使用带时间戳的文件名
@@ -982,7 +1038,7 @@ def save_current_results(all_results, failed_records, out_dir, output_format="xl
 def show_settings_gui():
     """Show integrated settings GUI with API settings, file selection, and options"""
     root = tk.Tk()
-    root.title("问卷模拟系统设置")
+    root.title(get_text("welcome_title"))
     root.geometry("600x700")
     root.resizable(True, True)
     
@@ -996,36 +1052,55 @@ def show_settings_gui():
     
     # ---------------- API Settings Tab ----------------
     api_tab = tk.Frame(notebook)
-    notebook.add(api_tab, text="API设置")
+    notebook.add(api_tab, text=get_text("api_settings"))
+    
+    # Language Selection
+    tk.Label(api_tab, text="语言设置 / Language:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
+    language_var = tk.StringVar(value=CURRENT_LANGUAGE)
+    language_frame = tk.Frame(api_tab)
+    language_frame.grid(row=0, column=1, pady=5, padx=10, sticky=tk.W)
+    
+    def update_language():
+        """更新界面语言"""
+        set_language(language_var.get())
+        # 更新窗口标题
+        root.title(get_text("welcome_title"))
+        # 更新标签页标题
+        notebook.tab(0, text=get_text("api_settings"))
+        notebook.tab(1, text=get_text("questionnaire_settings"))
+        notebook.tab(2, text=get_text("file_selection"))
+        
+    tk.Radiobutton(language_frame, text="中文", variable=language_var, value="zh", command=update_language).pack(side=tk.LEFT, padx=10)
+    tk.Radiobutton(language_frame, text="English", variable=language_var, value="en", command=update_language).pack(side=tk.LEFT, padx=10)
     
     # API Key
-    tk.Label(api_tab, text="API密钥:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(api_tab, text=get_text("api_key"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
     api_key_var = tk.StringVar(value=DASHSCOPE_API_KEY)
     api_key_entry = tk.Entry(api_tab, textvariable=api_key_var, width=50)
-    api_key_entry.grid(row=0, column=1, pady=5, padx=10)
+    api_key_entry.grid(row=1, column=1, pady=5, padx=10)
     
     # Base URL
-    tk.Label(api_tab, text="基础URL:", font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(api_tab, text=get_text("base_url"), font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
     base_url_var = tk.StringVar(value=BASE_URL)
     base_url_entry = tk.Entry(api_tab, textvariable=base_url_var, width=50)
-    base_url_entry.grid(row=1, column=1, pady=5, padx=10)
+    base_url_entry.grid(row=2, column=1, pady=5, padx=10)
     
     # Model Name
-    tk.Label(api_tab, text="模型名称:", font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(api_tab, text=get_text("model_name"), font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
     model_name_var = tk.StringVar(value=MODEL_NAME)
     model_name_entry = tk.Entry(api_tab, textvariable=model_name_var, width=50)
-    model_name_entry.grid(row=2, column=1, pady=5, padx=10)
+    model_name_entry.grid(row=3, column=1, pady=5, padx=10)
     
     # ---------------- Questionnaire Settings Tab ----------------
     q_settings_tab = tk.Frame(notebook)
-    notebook.add(q_settings_tab, text="问卷设置")
+    notebook.add(q_settings_tab, text=get_text("questionnaire_settings"))
     
     # Random Question Order
     random_order_var = tk.BooleanVar(value=False)
-    tk.Checkbutton(q_settings_tab, text="启用随机题目顺序", variable=random_order_var, font=('Arial', 10)).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=5, padx=10)
+    tk.Checkbutton(q_settings_tab, text=get_text("random_question_order"), variable=random_order_var, font=('Arial', 10)).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=5, padx=10)
     
     # Max Consecutive Same Dimension
-    tk.Label(q_settings_tab, text="同一维度最大连续出现数量:", font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(q_settings_tab, text=get_text("max_consecutive_same_dim"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
     max_consecutive_var = tk.IntVar(value=3)
     max_consecutive_spin = tk.Spinbox(q_settings_tab, from_=1, to=10, textvariable=max_consecutive_var, width=10)
     max_consecutive_spin.grid(row=1, column=1, sticky=tk.W, pady=5, padx=10)
@@ -1189,50 +1264,59 @@ def show_settings_gui():
     
     # ---------------- File Selection Tab ----------------
     file_tab = tk.Frame(notebook)
-    notebook.add(file_tab, text="文件选择")
+    notebook.add(file_tab, text=get_text("file_selection"))
     
     # Questionnaire File
-    tk.Label(file_tab, text="问卷文件:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(file_tab, text=get_text("questionnaire_file"), font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
     questionnaire_file_var = tk.StringVar()
     questionnaire_entry = tk.Entry(file_tab, textvariable=questionnaire_file_var, width=40)
     questionnaire_entry.grid(row=0, column=1, pady=5, padx=10)
-    tk.Button(file_tab, text="浏览", command=lambda: questionnaire_file_var.set(filedialog.askopenfilename(
-        title="选择问卷文件",
+    tk.Button(file_tab, text=get_text("browse"), command=lambda: questionnaire_file_var.set(filedialog.askopenfilename(
+        title=get_text("select_questionnaire_file"),
         filetypes=[("Excel文件", "*.xlsx;*.xls"), ("CSV文件", "*.csv"), ("Word文件", "*.docx"), ("所有文件", "*.*")]
     ))).grid(row=0, column=2, pady=5, padx=10)
     
     # Subject Background File
-    tk.Label(file_tab, text="被试背景文件:", font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(file_tab, text=get_text("subject_file"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
     subject_file_var = tk.StringVar()
     subject_entry = tk.Entry(file_tab, textvariable=subject_file_var, width=40)
     subject_entry.grid(row=1, column=1, pady=5, padx=10)
-    tk.Button(file_tab, text="浏览", command=lambda: subject_file_var.set(filedialog.askopenfilename(
-        title="选择被试背景文件",
+    tk.Button(file_tab, text=get_text("browse"), command=lambda: subject_file_var.set(filedialog.askopenfilename(
+        title=get_text("select_subject_file"),
         filetypes=[("Excel文件", "*.xlsx;*.xls"), ("CSV文件", "*.csv"), ("所有文件", "*.*")]
     ))).grid(row=1, column=2, pady=5, padx=10)
     
     # Output Directory
-    tk.Label(file_tab, text="输出结果路径:", font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(file_tab, text=get_text("output_dir"), font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
     output_dir_var = tk.StringVar(value=OUTPUT_DIR)
     output_entry = tk.Entry(file_tab, textvariable=output_dir_var, width=40)
     output_entry.grid(row=2, column=1, pady=5, padx=10)
-    tk.Button(file_tab, text="浏览", command=lambda: output_dir_var.set(filedialog.askdirectory(
-        title="选择输出结果路径"
+    tk.Button(file_tab, text=get_text("browse"), command=lambda: output_dir_var.set(filedialog.askdirectory(
+        title=get_text("select_output_dir")
     ))).grid(row=2, column=2, pady=5, padx=10)
     
     # Output Format
-    tk.Label(file_tab, text="输出格式:", font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
+    tk.Label(file_tab, text=get_text("output_format"), font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
     output_format_var = tk.StringVar(value="xlsx")
     format_frame = tk.Frame(file_tab)
     format_frame.grid(row=3, column=1, pady=5, padx=10, sticky=tk.W)
     tk.Radiobutton(format_frame, text="Excel (.xlsx)", variable=output_format_var, value="xlsx").pack(side=tk.LEFT, padx=10)
     tk.Radiobutton(format_frame, text="CSV (.csv)", variable=output_format_var, value="csv").pack(side=tk.LEFT, padx=10)
     
+    # Output Filename
+    tk.Label(file_tab, text=get_text("output_filename"), font=('Arial', 10, 'bold')).grid(row=4, column=0, sticky=tk.W, pady=5, padx=10)
+    output_filename_var = tk.StringVar(value="EasyPsych_Results")
+    filename_frame = tk.Frame(file_tab)
+    filename_frame.grid(row=4, column=1, pady=5, padx=10, sticky=tk.W)
+    filename_entry = tk.Entry(filename_frame, textvariable=output_filename_var, width=30)
+    filename_entry.pack(side=tk.LEFT)
+    tk.Label(filename_frame, text=get_text("no_extension"), fg='gray', font=('Arial', 9)).pack(side=tk.LEFT, padx=5)
+    
     # ---------------- Prompt Edit Button ----------------
     def edit_prompt():
         # Create prompt edit window
         prompt_window = tk.Toplevel(root)
-        prompt_window.title("编辑提示模板")
+        prompt_window.title(get_text("edit_prompt_template"))
         
         # Get screen resolution and adjust window size
         screen_width = root.winfo_screenwidth()
@@ -1248,7 +1332,7 @@ def show_settings_gui():
         prompt_frame.pack(fill=tk.BOTH, expand=True)
         
         # Prompt text
-        prompt_label = tk.Label(prompt_frame, text="提示模板:", font=('Arial', 10, 'bold'))
+        prompt_label = tk.Label(prompt_frame, text=get_text("prompt_template"), font=('Arial', 10, 'bold'))
         prompt_label.pack(pady=5)
         
         # Text widget for prompt editing
@@ -1283,23 +1367,23 @@ Please answer directly without additional formatting."""
             # Close the window
             prompt_window.destroy()
         
-        save_button = tk.Button(button_frame, text="保存", command=save_prompt, font=('Arial', 10, 'bold'), width=15)
+        save_button = tk.Button(button_frame, text=get_text("save"), command=save_prompt, font=('Arial', 10, 'bold'), width=15)
         save_button.pack(side=tk.RIGHT, padx=5)
         
-        cancel_button = tk.Button(button_frame, text="取消", command=prompt_window.destroy, font=('Arial', 10), width=10)
+        cancel_button = tk.Button(button_frame, text=get_text("cancel"), command=prompt_window.destroy, font=('Arial', 10), width=10)
         cancel_button.pack(side=tk.RIGHT, padx=5)
     
     # ---------------- Submit Button ----------------
     def submit():
         # Validate inputs
         if not questionnaire_file_var.get():
-            messagebox.showerror("错误", "未选择问卷文件")
+            messagebox.showerror(get_text("error"), get_text("error_no_questionnaire"))
             return
         if not subject_file_var.get():
-            messagebox.showerror("错误", "未选择被试背景文件")
+            messagebox.showerror(get_text("error"), get_text("error_no_subject"))
             return
         if not output_dir_var.get():
-            messagebox.showerror("错误", "未选择输出结果路径")
+            messagebox.showerror(get_text("error"), get_text("error_no_output"))
             return
         
         # Close window and return values
@@ -1310,10 +1394,10 @@ Please answer directly without additional formatting."""
     button_frame.pack(fill=tk.X)
     
     # Prompt edit button
-    tk.Button(button_frame, text="编辑提示模板", command=edit_prompt, font=('Arial', 10), width=15).pack(side=tk.LEFT, padx=5)
+    tk.Button(button_frame, text=get_text("edit_prompt_template"), command=edit_prompt, font=('Arial', 10), width=15).pack(side=tk.LEFT, padx=5)
     
     # Submit button
-    tk.Button(button_frame, text="开始运行", command=submit, font=('Arial', 10, 'bold'), width=20).pack(side=tk.RIGHT, padx=5)
+    tk.Button(button_frame, text=get_text("start_processing"), command=submit, font=('Arial', 10, 'bold'), width=20).pack(side=tk.RIGHT, padx=5)
     
     # Run the GUI
     root.mainloop()
@@ -1333,7 +1417,8 @@ Please answer directly without additional formatting."""
         'questionnaire_file': questionnaire_file_var.get(),
         'subject_file': subject_file_var.get(),
         'output_dir': output_dir_var.get(),
-        'output_format': output_format_var.get()
+        'output_format': output_format_var.get(),
+        'output_filename': output_filename_var.get()
     }
 
 # ---------------- Questionnaire File Parser ----------------
@@ -1359,37 +1444,65 @@ def parse_excel_csv_questionnaire(file_path):
         else:
             df = pd.read_excel(file_path)
         
-        # Required columns
-        required_cols = ['题目ID', '题目所属维度', '题目内容', '计分标准']
-        missing_cols = [col for col in required_cols if col not in df.columns]
+        # Get column names based on current language
+        column_names = get_column_names()
         
-        if missing_cols:
-            messagebox.showerror("错误", f"问卷文件缺少必要列: {', '.join(missing_cols)}")
-            return None
+        # Check for both Chinese and English column names
+        chinese_cols = ['题目ID', '题目所属维度', '题目内容', '计分标准']
+        english_cols = ['Question ID', 'Dimension', 'Question Content', 'Scoring Standard']
+        
+        # Determine which set of column names exists in the file
+        if all(col in df.columns for col in chinese_cols):
+            # Chinese column names found
+            col_mapping = dict(zip(chinese_cols, [column_names['question_id'], column_names['dimension'], 
+                                                column_names['question_content'], column_names['scoring_standard']]))
+        elif all(col in df.columns for col in english_cols):
+            # English column names found
+            col_mapping = dict(zip(english_cols, [column_names['question_id'], column_names['dimension'], 
+                                                column_names['question_content'], column_names['scoring_standard']]))
+        else:
+            # Neither complete set found, check individual columns
+            missing_cols = []
+            for chinese_col, english_col in zip(chinese_cols, english_cols):
+                if chinese_col not in df.columns and english_col not in df.columns:
+                    missing_cols.append(f"{chinese_col} / {english_col}")
+            
+            if missing_cols:
+                messagebox.showerror(get_text("error"), f"问卷文件缺少必要列: {', '.join(missing_cols)}")
+                return None
+            
+            # Create mapping for available columns
+            col_mapping = {}
+            for chinese_col, english_col in zip(chinese_cols, english_cols):
+                if chinese_col in df.columns:
+                    col_mapping[chinese_col] = column_names[chinese_cols.index(chinese_col)]
+                elif english_col in df.columns:
+                    col_mapping[english_col] = column_names[english_cols.index(english_col)]
         
         # Validate data integrity
         invalid_rows = []
         for idx, row in df.iterrows():
             row_num = idx + 2  # Excel rows start at 1, plus header
             missing_values = []
-            for col in required_cols:
+            for col in col_mapping.keys():
                 if pd.isna(row[col]) or str(row[col]).strip() == '':
                     missing_values.append(col)
             if missing_values:
-                invalid_rows.append(f"第{row_num}行: 缺少{', '.join(missing_values)}")
+                invalid_rows.append(f"Row {row_num}: Missing {', '.join(missing_values)}")
         
         if invalid_rows:
-            error_msg = "发现以下无效行:\n" + "\n".join(invalid_rows)
-            messagebox.showerror("错误", error_msg)
+            error_msg = "Found invalid rows:\n" + "\n".join(invalid_rows)
+            messagebox.showerror(get_text("error"), error_msg)
             return None
         
         # Parse questions
         questions = []
         for idx, row in df.iterrows():
-            question_id = str(row['题目ID']).strip()
-            dimension = str(row['题目所属维度']).strip()
-            stem = str(row['题目内容']).strip()
-            coding = str(row['计分标准']).strip()
+            # Use column mapping to get correct column names
+            question_id = str(row[list(col_mapping.keys())[0]]).strip()
+            dimension = str(row[list(col_mapping.keys())[1]]).strip()
+            stem = str(row[list(col_mapping.keys())[2]]).strip()
+            coding = str(row[list(col_mapping.keys())[3]]).strip()
             
             # Determine reverse coding (check if '(R)' is in stem)
             reverse_coded = '(R)' in stem or '(反向)' in stem
@@ -1415,7 +1528,7 @@ def parse_excel_csv_questionnaire(file_path):
         return questions
         
     except Exception as e:
-        messagebox.showerror("错误", f"解析问卷文件失败: {str(e)}")
+        messagebox.showerror(get_text("error"), f"解析问卷文件失败: {str(e)}")
         print(f"Error parsing Excel/CSV file: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -1891,6 +2004,7 @@ def main():
     subject_file = settings['subject_file']
     output_dir = settings['output_dir']
     output_format = settings['output_format']
+    output_filename = settings.get('output_filename', 'EasyPsych_Results')
     random_order = settings['random_order']
     token_limit = settings['token_limit']
     max_tokens = settings['max_tokens']
@@ -1901,6 +2015,7 @@ def main():
     print(f"Selected questionnaire file: {questionnaire_file}")
     print(f"Selected subject background file: {subject_file}")
     print(f"Selected output directory: {output_dir}")
+    print(f"Output filename: {output_filename}")
     print(f"Random question order: {random_order}")
     print(f"Max consecutive same dimension: {MAX_CONSECUTIVE_SAME_DIM}")
     
@@ -2087,30 +2202,37 @@ def main():
             print(f"\n🔴 Program terminated due to fatal API error: {FATAL_ERROR_MSG}")
             print("🔴 Please resolve the API issue (e.g., recharge Alibaba Cloud account) and restart the program.")
             # 保存中断结果
-            save_current_results(all_results, failed_records, out_dir, output_format, is_final=False)
-            messagebox.showerror("错误", f"程序因API错误终止:\n{FATAL_ERROR_MSG}\n\n请解决API问题（例如，为阿里云账户充值）并重新启动程序。")
+            save_current_results(all_results, failed_records, out_dir, output_format, is_final=False, output_filename=output_filename)
+            
+            # 检查是否是API错误监控触发的停止
+            if "连续API调用失败次数过多" in FATAL_ERROR_MSG:
+                error_message = f"{get_text('error_api_fatal')}:\n{FATAL_ERROR_MSG}\n\n{get_text('error_check_balance')}\n\n{get_text('error_check_api_input')}"
+                messagebox.showerror(get_text("error"), error_message)
+            else:
+                messagebox.showerror(get_text("error"), f"{get_text('error_api_fatal')}:\n{FATAL_ERROR_MSG}\n\n{get_text('error_check_balance')}\n\n{get_text('error_check_api_input')}")
+                
         elif not all_results:
-            messagebox.showerror("错误", "未生成任何结果，请检查输入文件和设置。")
+            messagebox.showerror(get_text("error"), get_text("error_no_valid_subjects"))
         elif not completed_successfully:
             # 程序被中断或出错
             print("\n🔴 Program did not complete successfully")
-            save_current_results(all_results, failed_records, out_dir, output_format, is_final=False)
-            messagebox.showwarning("警告", "程序未完全完成，已保存部分结果。")
+            save_current_results(all_results, failed_records, out_dir, output_format, is_final=False, output_filename=output_filename)
+            messagebox.showwarning(get_text("warning"), get_text("warning_incomplete"))
         else:
             # 程序正常完成
             print("\n✅ Program exited safely (all current results saved)")
             # 保存最终结果
-            save_current_results(all_results, failed_records, out_dir, output_format, is_final=True)
-            output_file = out_dir / f"EasyPsych_Results.{output_format}"
+            save_current_results(all_results, failed_records, out_dir, output_format, is_final=True, output_filename=output_filename)
+            output_file = out_dir / f"{output_filename}.{output_format}"
             
             # 构建成功信息
-            result_text = f"程序运行完成！\n\n已处理 {len(subjects)} 个被试\n已生成 {len(all_results)} 条结果\n\n结果文件保存位置:\n{output_file}"
+            result_text = f"{get_text('success_completed')}\n\n{get_text('success_subjects_processed', count=len(subjects))}\n{get_text('success_results_generated', count=len(all_results))}\n\n{get_text('success_file_saved')}\n{output_file}"
             
             # 使用messagebox.showinfo显示信息，然后用askyesno询问下一步
-            messagebox.showinfo("处理完成", result_text)
+            messagebox.showinfo(get_text("success"), result_text)
             
             # 询问用户是否要返回设置界面
-            answer = messagebox.askyesno("选择下一步", "是否要返回设置界面重新测试？\n\n是 - 返回设置\n否 - 退出程序")
+            answer = messagebox.askyesno(get_text("next_step"), get_text("return_to_settings"))
             
             if answer:
                 # 用户选择返回设置

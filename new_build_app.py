@@ -16,6 +16,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent
 SCRIPT_PATH = BASE_DIR / "EasyPsych_source_code.py"
 CONFIG_PATH = BASE_DIR / "config.py"
+LANGUAGE_CONFIG_PATH = BASE_DIR / "language_config.py"
 ICONS_DIR = BASE_DIR / "icons"
 OUTPUT_DIR = BASE_DIR / "dist"
 BUILD_DIR = BASE_DIR / "build"
@@ -57,6 +58,13 @@ def check_dependencies():
         return False
     else:
         print(f"✓ 配置文件存在: {CONFIG_PATH}")
+    
+    # 检查多语言配置文件
+    if not LANGUAGE_CONFIG_PATH.exists():
+        print(f"✗ 多语言配置文件不存在: {LANGUAGE_CONFIG_PATH}")
+        return False
+    else:
+        print(f"✓ 多语言配置文件存在: {LANGUAGE_CONFIG_PATH}")
     
     # 检查图标文件
     if not ICON_FILE.exists():
@@ -105,6 +113,7 @@ def build_app():
         "--windowed",  # 无控制台窗口
         "--name", "EasyPsych",  # 应用名称
         "--add-data", f"{CONFIG_PATH}{os.pathsep}.",  # 添加配置文件到根目录
+        "--add-data", f"{LANGUAGE_CONFIG_PATH}{os.pathsep}.",  # 添加多语言配置文件到根目录
         "--add-data", f"{ICONS_DIR}{os.pathsep}icons",  # 添加图标文件夹
         "--distpath", str(OUTPUT_DIR),  # 输出目录
         "--workpath", str(BUILD_DIR),  # 工作目录
