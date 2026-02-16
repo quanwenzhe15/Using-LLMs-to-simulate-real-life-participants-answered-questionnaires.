@@ -17,6 +17,7 @@ BASE_DIR = Path(__file__).parent
 SCRIPT_PATH = BASE_DIR / "EasyPsych_source_code.py"
 CONFIG_PATH = BASE_DIR / "config.py"
 LANGUAGE_CONFIG_PATH = BASE_DIR / "language_config.py"
+SETTINGS_MANAGER_PATH = BASE_DIR / "settings_manager.py"
 ICONS_DIR = BASE_DIR / "icons"
 OUTPUT_DIR = BASE_DIR / "dist"
 BUILD_DIR = BASE_DIR / "build"
@@ -115,6 +116,7 @@ def build_app():
         "--add-data", f"{CONFIG_PATH}{os.pathsep}.",  # 添加配置文件到根目录
         "--add-data", f"{LANGUAGE_CONFIG_PATH}{os.pathsep}.",  # 添加多语言配置文件到根目录
         "--add-data", f"{ICONS_DIR}{os.pathsep}icons",  # 添加图标文件夹
+        "--add-data", f"{SETTINGS_MANAGER_PATH}{os.pathsep}.",  # 添加设置管理器到根目录
         "--distpath", str(OUTPUT_DIR),  # 输出目录
         "--workpath", str(BUILD_DIR),  # 工作目录
     ]

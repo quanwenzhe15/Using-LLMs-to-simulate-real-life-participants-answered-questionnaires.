@@ -1,0 +1,26 @@
+{
+    "language": "zh",
+    "welcome_shown": false,
+    "api_settings": {
+        "api_key": "",
+        "base_url": "",
+        "model_name": ""
+    },
+    "questionnaire_settings": {
+        "random_order": false,
+        "max_consecutive_same_dim": 3,
+        "token_limit": 4000,
+        "max_tokens_per_response": 512,
+        "min_age": 18,
+        "max_age": 75
+    },
+    "file_selection": {
+        "questionnaire_file": "",
+        "background_file": ""
+    },
+    "output_settings": {
+        "output_format": "excel",
+        "output_filename": "EasyPsych_Results",
+        "output_directory": ""
+    }
+}

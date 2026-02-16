@@ -62,7 +62,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 def show_language_selection():
-    """显示语言选择弹窗"""
+    """显示语言选择弹窗，返回用户选择的语言"""
     # 导入语言配置
     get_text, get_column_names, set_language, CURRENT_LANGUAGE = import_language_config()
     
@@ -85,9 +85,14 @@ def show_language_selection():
     # 语言选择变量
     selected_language = tk.StringVar(value=CURRENT_LANGUAGE)
     
+    # 用于存储选择的语言
+    chosen_language = None
+    
     def confirm_language():
         """确认语言选择"""
-        set_language(selected_language.get())
+        nonlocal chosen_language
+        chosen_language = selected_language.get()
+        set_language(chosen_language)
         lang_root.destroy()
     
     # 语言选择按钮
@@ -106,6 +111,9 @@ def show_language_selection():
     
     # 运行语言选择窗口
     lang_root.mainloop()
+    
+    # 返回选择的语言
+    return chosen_language
 
 # Create welcome and license agreement window
 def show_welcome_and_license():
@@ -1099,6 +1107,12 @@ def save_current_results(all_results, failed_records, out_dir, output_format="xl
 # ---------------- Integrated GUI Settings ----------------
 def show_settings_gui():
     """Show integrated settings GUI with API settings, file selection, and options"""
+    # 导入设置管理器
+    from settings_manager import load_settings, save_settings, get_setting, update_setting
+    
+    # 加载用户设置
+    user_settings = load_settings()
+    
     root = tk.Tk()
     root.title(get_text("welcome_title"))
     root.geometry("600x700")
@@ -1120,39 +1134,68 @@ def show_settings_gui():
     
     # API Key
     tk.Label(api_tab, text=get_text("api_key"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
-    api_key_var = tk.StringVar(value=DASHSCOPE_API_KEY)
+    api_key_var = tk.StringVar(value=user_settings.get("api_settings", {}).get("api_key", DASHSCOPE_API_KEY))
     api_key_entry = tk.Entry(api_tab, textvariable=api_key_var, width=50)
     api_key_entry.grid(row=1, column=1, pady=5, padx=10)
     
     # Base URL
     tk.Label(api_tab, text=get_text("base_url"), font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
-    base_url_var = tk.StringVar(value=BASE_URL)
+    base_url_var = tk.StringVar(value=user_settings.get("api_settings", {}).get("base_url", BASE_URL))
     base_url_entry = tk.Entry(api_tab, textvariable=base_url_var, width=50)
     base_url_entry.grid(row=2, column=1, pady=5, padx=10)
     
     # Model Name
     tk.Label(api_tab, text=get_text("model_name"), font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
-    model_name_var = tk.StringVar(value=MODEL_NAME)
+    model_name_var = tk.StringVar(value=user_settings.get("api_settings", {}).get("model_name", MODEL_NAME))
     model_name_entry = tk.Entry(api_tab, textvariable=model_name_var, width=50)
     model_name_entry.grid(row=3, column=1, pady=5, padx=10)
+    
+    # ---------------- File Requirements Tab ----------------
+    file_req_tab = tk.Frame(notebook)
+    notebook.add(file_req_tab, text=get_text("file_requirements"))
+    
+    # File requirements text
+    file_req_text = tk.Text(file_req_tab, wrap=tk.WORD, padx=10, pady=10)
+    file_req_text.pack(fill=tk.BOTH, expand=True)
+    file_req_text.insert(tk.END, get_text("file_format_requirements_title") + "\n\n")
+    file_req_text.insert(tk.END, get_text("questionnaire_file_title") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("excel_file_requirement") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("csv_file_requirement") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("word_file_requirement") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("question_format_requirement") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("supported_question_formats") + "\n")
+    file_req_text.insert(tk.END, "  * " + get_text("standard_numbering") + "\n")
+    file_req_text.insert(tk.END, "  * " + get_text("with_asterisk") + "\n")
+    file_req_text.insert(tk.END, "  * " + get_text("bullet_point") + "\n")
+    file_req_text.insert(tk.END, "  * " + get_text("with_space") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("scoring_rule_format") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("reverse_scoring_markers") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("multiple_scoring_ranges") + "\n\n")
+    file_req_text.insert(tk.END, get_text("subject_background_file_title") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("supported_formats") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("mandatory_columns") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("other_columns") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("null_value_handling") + "\n")
+    file_req_text.insert(tk.END, "- " + get_text("high_missing_value_handling") + "\n")
+    file_req_text.config(state=tk.DISABLED)
     
     # ---------------- Questionnaire Settings Tab ----------------
     q_settings_tab = tk.Frame(notebook)
     notebook.add(q_settings_tab, text=get_text("questionnaire_settings"))
     
     # Random Question Order
-    random_order_var = tk.BooleanVar(value=False)
+    random_order_var = tk.BooleanVar(value=user_settings.get("questionnaire_settings", {}).get("random_order", False))
     tk.Checkbutton(q_settings_tab, text=get_text("random_question_order"), variable=random_order_var, font=('Arial', 10)).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=5, padx=10)
     
     # Max Consecutive Same Dimension
     tk.Label(q_settings_tab, text=get_text("max_consecutive_same_dim"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
-    max_consecutive_var = tk.IntVar(value=3)
+    max_consecutive_var = tk.IntVar(value=user_settings.get("questionnaire_settings", {}).get("max_consecutive_same_dim", 3))
     max_consecutive_spin = tk.Spinbox(q_settings_tab, from_=1, to=10, textvariable=max_consecutive_var, width=10)
     max_consecutive_spin.grid(row=1, column=1, sticky=tk.W, pady=5, padx=10)
     
     # Token limit for API analysis
     tk.Label(q_settings_tab, text=get_text("api_token_limit"), font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
-    token_limit_var = tk.IntVar(value=4000)
+    token_limit_var = tk.IntVar(value=user_settings.get("questionnaire_settings", {}).get("token_limit", 4000))
     token_frame = tk.Frame(q_settings_tab)
     token_frame.grid(row=2, column=1, pady=5, padx=10, sticky=tk.W)
     token_scale = tk.Scale(token_frame, from_=1000, to=8000, orient=tk.HORIZONTAL, variable=token_limit_var, 
@@ -1169,7 +1212,7 @@ def show_settings_gui():
     
     # MAX_TOKENS setting for individual responses
     tk.Label(q_settings_tab, text=get_text("max_tokens_per_response"), font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
-    max_tokens_var = tk.IntVar(value=512)
+    max_tokens_var = tk.IntVar(value=user_settings.get("questionnaire_settings", {}).get("max_tokens_per_response", 512))
     max_tokens_frame = tk.Frame(q_settings_tab)
     max_tokens_frame.grid(row=3, column=1, pady=5, padx=10, sticky=tk.W)
     tk.Scale(max_tokens_frame, from_=100, to=2000, orient=tk.HORIZONTAL, variable=max_tokens_var, 
@@ -1188,12 +1231,12 @@ def show_settings_gui():
     age_frame.grid(row=4, column=1, pady=5, padx=10, sticky=tk.W)
     
     tk.Label(age_frame, text=get_text("min_age")).pack(side=tk.LEFT)
-    min_age_var = tk.IntVar(value=18)
+    min_age_var = tk.IntVar(value=user_settings.get("questionnaire_settings", {}).get("min_age", 18))
     min_age_spin = tk.Spinbox(age_frame, from_=0, to=100, textvariable=min_age_var, width=5)
     min_age_spin.pack(side=tk.LEFT, padx=5)
     
     tk.Label(age_frame, text=get_text("max_age")).pack(side=tk.LEFT, padx=(10, 0))
-    max_age_var = tk.IntVar(value=75)
+    max_age_var = tk.IntVar(value=user_settings.get("questionnaire_settings", {}).get("max_age", 75))
     max_age_spin = tk.Spinbox(age_frame, from_=0, to=100, textvariable=max_age_var, width=5)
     max_age_spin.pack(side=tk.LEFT, padx=5)
     
@@ -1341,7 +1384,7 @@ def show_settings_gui():
     
     # Questionnaire File
     tk.Label(file_tab, text=get_text("questionnaire_file"), font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
-    questionnaire_file_var = tk.StringVar()
+    questionnaire_file_var = tk.StringVar(value=user_settings.get("file_selection", {}).get("questionnaire_file", ""))
     questionnaire_entry = tk.Entry(file_tab, textvariable=questionnaire_file_var, width=40)
     questionnaire_entry.grid(row=0, column=1, pady=5, padx=10)
     tk.Button(file_tab, text=get_text("browse"), command=lambda: questionnaire_file_var.set(filedialog.askopenfilename(
@@ -1351,7 +1394,7 @@ def show_settings_gui():
     
     # Subject Background File
     tk.Label(file_tab, text=get_text("subject_file"), font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5, padx=10)
-    subject_file_var = tk.StringVar()
+    subject_file_var = tk.StringVar(value=user_settings.get("file_selection", {}).get("background_file", ""))
     subject_entry = tk.Entry(file_tab, textvariable=subject_file_var, width=40)
     subject_entry.grid(row=1, column=1, pady=5, padx=10)
     tk.Button(file_tab, text=get_text("browse"), command=lambda: subject_file_var.set(filedialog.askopenfilename(
@@ -1361,7 +1404,7 @@ def show_settings_gui():
     
     # Output Directory
     tk.Label(file_tab, text=get_text("output_dir"), font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=tk.W, pady=5, padx=10)
-    output_dir_var = tk.StringVar(value=OUTPUT_DIR)
+    output_dir_var = tk.StringVar(value=user_settings.get("output_settings", {}).get("output_directory", OUTPUT_DIR))
     output_entry = tk.Entry(file_tab, textvariable=output_dir_var, width=40)
     output_entry.grid(row=2, column=1, pady=5, padx=10)
     tk.Button(file_tab, text=get_text("browse"), command=lambda: output_dir_var.set(filedialog.askdirectory(
@@ -1370,7 +1413,7 @@ def show_settings_gui():
     
     # Output Format
     tk.Label(file_tab, text=get_text("output_format"), font=('Arial', 10, 'bold')).grid(row=3, column=0, sticky=tk.W, pady=5, padx=10)
-    output_format_var = tk.StringVar(value="xlsx")
+    output_format_var = tk.StringVar(value=user_settings.get("output_settings", {}).get("output_format", "xlsx"))
     format_frame = tk.Frame(file_tab)
     format_frame.grid(row=3, column=1, pady=5, padx=10, sticky=tk.W)
     tk.Radiobutton(format_frame, text="Excel (.xlsx)", variable=output_format_var, value="xlsx").pack(side=tk.LEFT, padx=10)
@@ -1378,7 +1421,7 @@ def show_settings_gui():
     
     # Output Filename
     tk.Label(file_tab, text=get_text("output_filename"), font=('Arial', 10, 'bold')).grid(row=4, column=0, sticky=tk.W, pady=5, padx=10)
-    output_filename_var = tk.StringVar(value="EasyPsych_Results")
+    output_filename_var = tk.StringVar(value=user_settings.get("output_settings", {}).get("output_filename", "EasyPsych_Results"))
     filename_frame = tk.Frame(file_tab)
     filename_frame.grid(row=4, column=1, pady=5, padx=10, sticky=tk.W)
     filename_entry = tk.Entry(filename_frame, textvariable=output_filename_var, width=30)
@@ -1448,6 +1491,33 @@ Please answer directly without additional formatting."""
     
     # ---------------- Submit Button ----------------
     def submit():
+        # 保存用户设置
+        user_settings["api_settings"] = {
+            "api_key": api_key_var.get(),
+            "base_url": base_url_var.get(),
+            "model_name": model_name_var.get()
+        }
+        user_settings["questionnaire_settings"] = {
+            "random_order": random_order_var.get(),
+            "max_consecutive_same_dim": max_consecutive_var.get(),
+            "token_limit": token_limit_var.get(),
+            "max_tokens_per_response": max_tokens_var.get(),
+            "min_age": min_age_var.get(),
+            "max_age": max_age_var.get()
+        }
+        user_settings["file_selection"] = {
+            "questionnaire_file": questionnaire_file_var.get(),
+            "background_file": subject_file_var.get()
+        }
+        user_settings["output_settings"] = {
+            "output_format": output_format_var.get(),
+            "output_filename": output_filename_var.get(),
+            "output_directory": output_dir_var.get()
+        }
+        
+        # 保存设置
+        save_settings(user_settings)
+        
         # Validate inputs
         if not questionnaire_file_var.get():
             messagebox.showerror(get_text("error"), get_text("error_no_questionnaire"))
@@ -2131,6 +2201,7 @@ def main():
     import tkinter as tk
     from tkinter import ttk
     import time
+    import threading
     
     progress_window = tk.Toplevel()
     progress_window.title("处理进度")
@@ -2154,49 +2225,71 @@ def main():
     button_frame = tk.Frame(progress_window)
     button_frame.pack(pady=10)
     
-    # 暂停状态标志
-    is_paused = False
+    # 全局状态标志（使用线程安全的变量）
+    should_cancel = False
+    current_progress = 0
+    current_status = "准备开始..."
+    processing_active = True
     
-    def toggle_pause():
-        """切换暂停/继续状态"""
-        nonlocal is_paused
-        is_paused = not is_paused
-        if is_paused:
-            pause_button.config(text=get_text("resume_button"))
-            status_label.config(text="处理已暂停")
-        else:
-            pause_button.config(text=get_text("pause_button"))
-            status_label.config(text="处理继续中...")
+    # 线程同步事件
+    cancel_event = threading.Event()
     
-    pause_button = tk.Button(button_frame, text=get_text("pause_button"), command=toggle_pause, font=('Arial', 10))
-    pause_button.pack(side=tk.LEFT, padx=10)
+    # 线程安全的UI更新函数
+    def safe_update_ui():
+        """线程安全的UI更新函数"""
+        try:
+            if progress_window.winfo_exists():
+                progress_bar['value'] = current_progress
+                progress_label.config(text=f"处理被试 {current_progress}/{total_subjects}")
+                status_label.config(text=current_status)
+                progress_window.update_idletasks()
+        except:
+            pass  # 窗口可能已被销毁
+    
+
     
     def cancel_processing():
-        """取消处理并自动保存已输出数据"""
-        nonlocal completed_successfully, all_results, failed_records
+        """取消处理（需要用户确认）"""
+        nonlocal completed_successfully, should_cancel, processing_active
         
-        # 自动保存已输出的数据
-        if all_results:
-            try:
-                # 保存当前结果
-                save_current_results(all_results, failed_records, out_dir, output_format, is_final=False, output_filename=output_filename)
-                
-                # 显示保存成功消息
-                from tkinter import messagebox
-                messagebox.showinfo("取消处理", f"已自动保存 {len(all_results)} 个被试的处理结果")
-            except Exception as e:
-                print(f"保存结果时出错: {e}")
+        # 显示确认弹窗
+        from tkinter import messagebox
+        result = messagebox.askyesno(
+            "确认取消",
+            "确定要取消当前处理吗？\n\n取消后已处理的数据将不会保存。",
+            icon="warning"
+        )
+        
+        # 如果用户确认取消
+        if result:
+            should_cancel = True
+            processing_active = False
+            cancel_event.set()  # 设置取消事件
+            
+            # 立即更新UI状态
+            current_status = "正在取消处理..."
+            safe_update_ui()
+            
+            completed_successfully = False
+            
+            # 延迟销毁窗口
+            def delayed_destroy():
+                try:
+                    progress_window.destroy()
+                except:
+                    pass
+            
+            # 0.5秒后销毁窗口
+            progress_window.after(500, delayed_destroy)
+            
+            # 触发返回设置界面的标志
+            global RETURN_TO_SETTINGS_FLAG
+            RETURN_TO_SETTINGS_FLAG = True
+            
+            return True
         else:
-            print("没有需要保存的结果数据")
-        
-        completed_successfully = False
-        progress_window.destroy()
-        
-        # 触发返回设置界面的标志
-        global RETURN_TO_SETTINGS_FLAG
-        RETURN_TO_SETTINGS_FLAG = True
-        
-        return True
+            # 用户选择不取消，继续处理
+            return False
     
     cancel_button = tk.Button(button_frame, text=get_text("cancel_button"), command=cancel_processing, font=('Arial', 10))
     cancel_button.pack(side=tk.LEFT, padx=10)
@@ -2214,25 +2307,24 @@ def main():
     
     try:
         for i, subject in enumerate(subjects, 1):
+            # 检查取消状态 - 使用事件机制
+            if cancel_event.is_set() or should_cancel or not processing_active:
+                print("检测到取消请求，停止处理")
+                break
+            
             # Check fatal error: stop processing new subjects
             if FATAL_API_ERROR:
                 break
             
-            # 检查暂停状态
-            while is_paused:
-                progress_window.update()
-                time.sleep(0.1)  # 短暂延迟，避免CPU占用过高
-                
-            # 检查取消状态
-            if not progress_window.winfo_exists():
-                break
+            # 更新进度状态
+            current_progress = i
+            current_status = f"正在处理被试 {subject['subject_id']} ({subject['性别']}, {subject['年龄']}岁)"
+            safe_update_ui()
             
-            # 更新进度条
-            progress_label.config(text=f"处理被试 {i}/{total_subjects}")
-            status_label.config(text=f"正在处理被试 {subject['subject_id']} ({subject['性别']}, {subject['年龄']}岁)")
-            progress_bar['value'] = i
-            # 使用update_idletasks更轻量，避免卡顿
-            progress_window.update_idletasks()
+            # 检查取消状态（处理每个被试前检查）
+            if cancel_event.is_set() or should_cancel or not processing_active:
+                print("检测到取消请求，停止处理")
+                break
             
             print(f"\nProcessing subject {subject['subject_id']} ({subject['性别']}, {subject['年龄']} years old)...")
             subject_responses = []
@@ -2271,6 +2363,8 @@ def main():
                 
                 # 处理完成的任务
                 completed_count = 0
+                last_update_time = time.time()
+                
                 for future in concurrent.futures.as_completed(future_to_question):
                     completed_count += 1
                     args = future_to_question[future]
@@ -2281,6 +2375,11 @@ def main():
                         print(f"  检测到致命API错误，停止处理剩余问题")
                         break
                     
+                    # 检查取消状态（并发处理期间检查）
+                    if cancel_event.is_set() or should_cancel or not processing_active:
+                        print("  并发处理期间检测到取消请求")
+                        break
+                    
                     try:
                         response_record, error_record = future.result()
                         subject_responses.append(response_record)
@@ -2289,6 +2388,14 @@ def main():
                             failed_records.append(error_record)
                         
                         print(f"  已完成 {completed_count}/{len(random_question_list)}: {question['question_id']} (状态: {response_record['作答状态']})")
+                        
+                        # 优化UI更新 - 只在必要时更新（每完成2个问题或超过0.5秒）
+                        current_time = time.time()
+                        if completed_count % 2 == 0 or current_time - last_update_time > 0.5:
+                            # 更新问题处理状态
+                            current_status = f"正在处理被试 {subject['subject_id']} - 问题 {completed_count}/{len(random_question_list)}"
+                            safe_update_ui()
+                            last_update_time = current_time
                         
                     except Exception as e:
                         print(f"  处理问题 {question['question_id']} 时发生异常: {str(e)}")
@@ -2414,11 +2521,28 @@ if __name__ == "__main__":
     print(f"Created icon directory: {icon_dir}")
     print(f"Icon placeholder created at: {icon_placeholder}")
     
-    # 首先显示语言选择弹窗
-    show_language_selection()
+    # 导入设置管理器
+    from settings_manager import get_language, set_language, is_welcome_shown, set_welcome_shown
     
-    # 然后显示欢迎和条款窗口
-    show_welcome_and_license()
+    # 检查是否已经显示过欢迎界面
+    if not is_welcome_shown():
+        # 显示语言选择弹窗
+        selected_language = show_language_selection()
+        if selected_language:
+            set_language(selected_language)
+        
+        # 显示欢迎和条款窗口
+        show_welcome_and_license()
+        
+        # 标记欢迎界面已显示
+        set_welcome_shown(True)
+    else:
+        # 如果已经显示过欢迎界面，直接使用保存的语言设置
+        saved_language = get_language()
+        if saved_language:
+            # 设置语言
+            get_text, get_column_names, set_language_func, CURRENT_LANGUAGE = import_language_config()
+            set_language_func(saved_language)
     
     # PyInstaller is only needed for building, not for running
     # 只在构建时需要，运行时不需要导入
